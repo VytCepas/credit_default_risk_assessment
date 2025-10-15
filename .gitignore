@@ -1,2 +1,7 @@
+# Directories to ignore
 .venv
 __pycache__/
+
+# Files to ignore
+*.pyc
+*.env
