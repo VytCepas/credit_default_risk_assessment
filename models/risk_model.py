@@ -671,7 +671,7 @@ class RiskModel:
 
         print(f"Model saved to: {save_path}")
 
-    def load(self, filepath: str = "streamlit_app/src/assets/risk_model.pkl"):
+    def load(self, filepath: str = "../streamlit_app/src/assets/risk_model.pkl"):
         load_path = Path(filepath)
 
         if not load_path.exists():
