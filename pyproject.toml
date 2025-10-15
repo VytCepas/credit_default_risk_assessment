@@ -1,32 +1,31 @@
-[project]
-name = "home_credit_default_risk"
+[tool.poetry]
+name = "home-credit-default-risk"
 version = "0.1.0"
-description = ""
-authors = [
-    {name = "VytCepas",email = "121751744+VytCepas@users.noreply.github.com"}
-]
+description = "Credit Default Risk Assessment Application"
+authors = ["VytCepas <121751744+VytCepas@users.noreply.github.com>"]
 readme = "README.md"
-requires-python = ">=3.12,<3.13"
-dependencies = [
-    "numpy (==2.3.0)",
-    "pandas (>=2.3.0,<3.0.0)",
-    "matplotlib (>=3.10.3,<4.0.0)",
-    "seaborn (>=0.13.2,<0.14.0)",
-    "scikit-learn (>=1.7.0,<2.0.0)",
-    "imbalanced-learn (>=0.12.0,<1.0.0)",
-    "shap (>=0.45.0,<1.0.0)",
-    "boruta (>=0.4.3,<0.5.0)",
-    "black (>=25.1.0,<26.0.0)",
-    "requests (>=2.32.4,<3.0.0)",
-    "statsmodels (>=0.14.4,<0.15.0)",
-    "pyarrow (>=20.0.0,<21.0.0)",
-    "pandarallel (>=1.6.5,<2.0.0)",
-    "ipywidgets (>=8.1.7,<9.0.0)",
-    "lightgbm (>=4.6.0,<5.0.0)",
-    "streamlit (>=1.50.0,<2.0.0)",
-    "plotly (>=6.3.1,<7.0.0)",
-    "watchdog (>=6.0.0,<7.0.0)",
-]
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.11"
+numpy = "2.3.0"
+pandas = "^2.3.0"
+matplotlib = "^3.10.3"
+seaborn = "^0.13.2"
+scikit-learn = "^1.7.0"
+imbalanced-learn = "^0.12.0"
+shap = "^0.45.0"
+boruta = "^0.4.3"
+black = "^25.1.0"
+requests = "^2.32.4"
+statsmodels = "^0.14.4"
+pyarrow = "^20.0.0"
+pandarallel = "^1.6.5"
+ipywidgets = "^8.1.7"
+lightgbm = "^4.6.0"
+streamlit = "^1.50.0"
+plotly = "^6.3.1"
+watchdog = "^6.0.0"
 
 
 [build-system]
