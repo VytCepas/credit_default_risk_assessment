@@ -1,76 +1,40 @@
 [global]
-showWarningOnDirectExecution = true
 
 # By default, Streamlit checks if the Python watchdog module is available and, if not,
-
-[logger]# prints a warning asking for you to install it. The watchdog module is not required,
-
-level = "info"# it's just an optimization. You can set this to False to prevent this warning.
-
+# prints a warning asking for you to install it. The watchdog module is not required,
+# it's just an optimization. You can set this to False to prevent this warning.
 disableWatchdogWarning = false
+
+# By default, Streamlit displays a warning when a user sets both a widget default value
+# in the function defining the widget and a widget value via the widget's key in
+# st.session_state.
+showWarningOnDirectExecution = true
+
+[logger]
+
+# Level of logging: 'error', 'warning', 'info', or 'debug'.
+level = "info"
+
+[client]
+
+# Whether to enable st.cache.
+caching = true
+
+# If false, makes your Streamlit script not draw to a Streamlit app.
+displayEnabled = true
+
+# Controls whether uncaught app exceptions are displayed in the browser. By default, this is set to True and Streamlit displays app exceptions and associated tracebacks in the browser.
+showErrorDetails = true
 
 [runner]
 
-magicEnabled = true# By default, Streamlit displays a warning when a user sets both a widget default value
-
-postScriptGC = true# in the function defining the widget and a widget value via the widget's key in
-
-fastReruns = true# st.session_state.
-
-showWarningOnDirectExecution = true
-
-[server]
-
-folderWatchBlacklist = [][logger]
-
-fileWatcherType = "auto"
-
-cookieSecret = "home-credit-risk-app-secret-key"# Level of logging: 'error', 'warning', 'info', or 'debug'.
-
-headless = falselevel = "info"
-
-runOnSave = true
-
-address = "localhost"[client]
-
-port = 8501
-
-baseUrlPath = ""# Whether to enable st.cache.
-
-enableCORS = truecaching = true
-
-enableXsrfProtection = true
-
-maxUploadSize = 200# If false, makes your Streamlit script not draw to a Streamlit app.
-
-maxMessageSize = 200displayEnabled = true
-
-enableWebsocketCompression = false
-
-# Controls whether uncaught app exceptions are displayed in the browser. By default, this is set to True and Streamlit displays app exceptions and associated tracebacks in the browser.
-
-[browser]showErrorDetails = true
-
-serverAddress = "localhost"
-
-gatherUsageStats = false[runner]
-
-serverPort = 8501
-
 # Allows you to type a variable or string by itself in a single line of Python code to write it to the app.
+magicEnabled = true
 
-[theme]magicEnabled = true
+# Install a Python tracer to allow you to stop or pause your script at any point and introspect it. As a side-effect, this slows down your script's execution.
+installTracer = false
 
-primaryColor = "#1f77b4"
-
-backgroundColor = "#ffffff"# Install a Python tracer to allow you to stop or pause your script at any point and introspect it. As a side-effect, this slows down your script's execution.
-
-secondaryBackgroundColor = "#f0f2f6"installTracer = false
-
-textColor = "#262730"
-
-font = "sans serif"# Sets the MPLBACKEND environment variable to Agg inside Streamlit to prevent Python crashing.
-
+# Sets the MPLBACKEND environment variable to Agg inside Streamlit to prevent Python crashing.
 fixMatplotlib = true
 
 # Run the Python Garbage Collector after each script execution. This can help avoid excess memory use in Streamlit apps, but could introduce delay in rerunning the app script for high-memory-use applications.
