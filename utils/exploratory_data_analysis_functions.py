@@ -8,7 +8,9 @@ from sklearn.preprocessing import KBinsDiscretizer
 from sklearn.metrics import mutual_info_score
 from sklearn.utils import resample
 import warnings
-warnings.filterwarnings('ignore')
+
+warnings.filterwarnings("ignore")
+
 
 def calculate_cohens_d(group1, group2):
     """Calculate Cohen's d effect size between two groups"""
@@ -319,17 +321,17 @@ def print_feature_importance_summary(analysis_results):
 
 def analyze_mutual_information(
     df,
-    target_col='defaulted',
+    target_col="defaulted",
     feature_groups=None,
     binary_encoding=None,
     n_bins=20,
     balance_data=True,
     figsize=(18, 16),
-    random_state=0
+    random_state=0,
 ):
     """
     Compute and visualize mutual information matrix for features.
-    
+
     Parameters
     ----------
     df : pd.DataFrame
@@ -350,7 +352,7 @@ def analyze_mutual_information(
         Figure size for heatmap
     random_state : int, default=0
         Random state for reproducibility
-        
+
     Returns
     -------
     mi_df : pd.DataFrame
@@ -360,69 +362,78 @@ def analyze_mutual_information(
     """
     if feature_groups is None:
         feature_groups = {
-            'numerical': df.select_dtypes(include=['int64', 'float64']).columns.tolist(),
-            'binary': [],
-            'categorical': df.select_dtypes(include=['object', 'category']).columns.tolist()
+            "numerical": df.select_dtypes(
+                include=["int64", "float64"]
+            ).columns.tolist(),
+            "binary": [],
+            "categorical": df.select_dtypes(
+                include=["object", "category"]
+            ).columns.tolist(),
         }
         for group in feature_groups.values():
             if target_col in group:
                 group.remove(target_col)
-    
-    numerical_cols = feature_groups.get('numerical', [])
-    binary_cols = feature_groups.get('binary', [])
-    categorical_cols = feature_groups.get('categorical', [])
-    
+
+    numerical_cols = feature_groups.get("numerical", [])
+    binary_cols = feature_groups.get("binary", [])
+    categorical_cols = feature_groups.get("categorical", [])
+
     if binary_encoding is None:
         binary_encoding = {}
-        
+
     analysis_df = df.copy()
-    
+
     if balance_data:
         df_majority = analysis_df[analysis_df[target_col] == 0]
         df_minority = analysis_df[analysis_df[target_col] == 1]
         df_majority_downsampled = resample(
-            df_majority, replace=False, n_samples=len(df_minority), random_state=random_state
+            df_majority,
+            replace=False,
+            n_samples=len(df_minority),
+            random_state=random_state,
         )
         analysis_df = pd.concat([df_majority_downsampled, df_minority]).sample(
             frac=1, random_state=random_state
         )
-    
+
     discretized_df = analysis_df.copy()
-    
+
     for col in binary_cols:
         if col in binary_encoding:
             target_val, _ = binary_encoding[col]
             discretized_df[col] = (discretized_df[col] == target_val).astype(int)
         else:
-            discretized_df[col] = discretized_df[col].astype('category').cat.codes
-    
+            discretized_df[col] = discretized_df[col].astype("category").cat.codes
+
     for col in numerical_cols:
-        kbd = KBinsDiscretizer(n_bins=n_bins, encode='ordinal', strategy='quantile', subsample=None)
-        discretized_df[col] = kbd.fit_transform(discretized_df[[col]]).ravel().astype(int)
-    
+        kbd = KBinsDiscretizer(
+            n_bins=n_bins, encode="ordinal", strategy="quantile", subsample=None
+        )
+        discretized_df[col] = (
+            kbd.fit_transform(discretized_df[[col]]).ravel().astype(int)
+        )
+
     for col in categorical_cols:
-        discretized_df[col] = discretized_df[col].astype('category').cat.codes
-    
+        discretized_df[col] = discretized_df[col].astype("category").cat.codes
+
     all_features = numerical_cols + binary_cols + categorical_cols + [target_col]
-    
+
     n = len(all_features)
     mi_matrix = np.zeros((n, n))
-    
+
     for i in range(n):
         for j in range(i, n):
             if i == j:
                 mi_matrix[i, j] = mutual_info_score(
-                    discretized_df[all_features[i]], 
-                    discretized_df[all_features[i]]
+                    discretized_df[all_features[i]], discretized_df[all_features[i]]
                 )
             else:
                 mi_score = mutual_info_score(
-                    discretized_df[all_features[i]], 
-                    discretized_df[all_features[j]]
+                    discretized_df[all_features[i]], discretized_df[all_features[j]]
                 )
                 mi_matrix[i, j] = mi_score
                 mi_matrix[j, i] = mi_score
-    
+
     mi_normalized = np.zeros_like(mi_matrix)
     for i in range(n):
         for j in range(n):
@@ -433,25 +444,25 @@ def analyze_mutual_information(
                 h_j = mi_matrix[j, j]
                 nmi = 2 * mi_matrix[i, j] / (h_i + h_j) if (h_i + h_j) > 0 else 0
                 mi_normalized[i, j] = nmi
-    
+
     mi_df = pd.DataFrame(mi_normalized, index=all_features, columns=all_features)
-    
+
     fig, ax = plt.subplots(figsize=figsize)
-    
+
     sns.heatmap(
         mi_df,
         annot=True,
-        fmt='.2f',
-        cmap='Greens',
+        fmt=".2f",
+        cmap="Greens",
         square=True,
         vmin=0,
         vmax=1,
-        cbar_kws={"shrink": .8, "label": "Normalized MI (NMI)"},
+        cbar_kws={"shrink": 0.8, "label": "Normalized MI (NMI)"},
         ax=ax,
         linewidths=0.5,
-        linecolor='white'
+        linecolor="white",
     )
-    
+
     yticklabels = []
     for feat in mi_df.index:
         if feat == target_col:
@@ -462,46 +473,48 @@ def analyze_mutual_information(
             yticklabels.append(f"{feat} (B)")
         else:
             yticklabels.append(f"{feat} (C)")
-    
+
     ax.set_yticklabels(yticklabels, rotation=0, fontsize=9)
     ax.set_xticklabels(yticklabels, rotation=90, fontsize=9)
-    
+
     for i, label in enumerate(ax.get_yticklabels()):
         feat = mi_df.index[i]
         if feat == target_col:
-            label.set_color('red')
-            label.set_weight('bold')
+            label.set_color("red")
+            label.set_weight("bold")
         elif feat in numerical_cols:
-            label.set_color('blue')
+            label.set_color("blue")
         elif feat in binary_cols:
-            label.set_color('green')
+            label.set_color("green")
         else:
-            label.set_color('orange')
-    
+            label.set_color("orange")
+
     for i, label in enumerate(ax.get_xticklabels()):
         feat = mi_df.columns[i]
         if feat == target_col:
-            label.set_color('red')
-            label.set_weight('bold')
+            label.set_color("red")
+            label.set_weight("bold")
         elif feat in numerical_cols:
-            label.set_color('blue')
+            label.set_color("blue")
         elif feat in binary_cols:
-            label.set_color('green')
+            label.set_color("green")
         else:
-            label.set_color('orange')
-    
+            label.set_color("orange")
+
     balance_text = "Balanced Data" if balance_data else "Original Data"
     plt.title(
-        f'Mutual Information Matrix ({balance_text}, n_bins={n_bins})\n'
-        f'TARGET=Red, N=Numerical, B=Binary, C=Categorical',
-        fontsize=16, weight='bold', pad=20
+        f"Mutual Information Matrix ({balance_text}, n_bins={n_bins})\n"
+        f"TARGET=Red, N=Numerical, B=Binary, C=Categorical",
+        fontsize=16,
+        weight="bold",
+        pad=20,
     )
     plt.tight_layout()
     plt.show()
-    
+
     print("SUMMARY STATISTICS")
-    print("="*80)
-    
+    print("=" * 80)
+
     target_mi = mi_df[target_col].drop(target_col).sort_values(ascending=False)
     print(f"\nTop 10 features by MI with {target_col}:")
     print(f"{'Feature':<25} {'Type':<6} {'NMI':<10}")

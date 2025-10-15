@@ -1,4 +1,5 @@
 from pathlib import Path
+import numpy as np
 import streamlit as st
 from models.risk_model import RiskModel
 
@@ -127,8 +128,6 @@ def predict_with_explanations(model, client_responses):
         processed_features = None
 
         if "shap_explanations" in result and result["shap_explanations"]:
-            import numpy as np
-
             shap_explanations = result["shap_explanations"]
             shap_values = np.array([item["contribution"] for item in shap_explanations])
             processed_features = [item["feature"] for item in shap_explanations]
