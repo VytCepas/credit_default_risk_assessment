@@ -595,53 +595,67 @@ class RiskModel:
         result = self.predict(client_data)
 
         if self.shap_explainer is not None:
-            transformer = QuestionnaireToFeatures()
-            # Use the exact order that matches training data (from DataPreprocessor)
-            expected_order = [
-                "age_years",
-                "years_employed",
-                "num_children",
-                "num_family_members",
-                "total_income",
-                "credit_amount",
-                "loan_annuity",
-                "gender",
-                "owns_car",
-                "owns_housing",
-                "contract_type",
-                "income_type",
-                "education_level",
-                "family_status",
-                "housing_type",
-            ]
-            transformer.expected_columns = expected_order
-            X = transformer.transform(client_data)
+            try:
+                transformer = QuestionnaireToFeatures()
+                # Use the exact order that matches training data (from DataPreprocessor)
+                expected_order = [
+                    "age_years",
+                    "years_employed",
+                    "num_children",
+                    "num_family_members",
+                    "total_income",
+                    "credit_amount",
+                    "loan_annuity",
+                    "gender",
+                    "owns_car",
+                    "owns_housing",
+                    "contract_type",
+                    "income_type",
+                    "education_level",
+                    "family_status",
+                    "housing_type",
+                ]
+                transformer.expected_columns = expected_order
+                X = transformer.transform(client_data)
 
-            X_transformed = self.pipeline.named_steps["preprocessing"].transform(X)
+                X_transformed = self.pipeline.named_steps["preprocessing"].transform(X)
 
-            shap_values = self.shap_explainer.shap_values(X_transformed)
+                try:
+                    shap_values = self.shap_explainer.shap_values(X_transformed)
+                except AttributeError as e:
+                    print(f"SHAP explainer incompatibility detected: {e}")
+                    print("Reinitializing SHAP explainer...")
+                    self.shap_explainer = shap.TreeExplainer(
+                        self.pipeline.named_steps["classifier"]
+                    )
+                    shap_values = self.shap_explainer.shap_values(X_transformed)
 
-            if isinstance(shap_values, list):
-                shap_values = shap_values[1]
+                if isinstance(shap_values, list):
+                    shap_values = shap_values[1]
 
-            feature_contributions = []
-            for i, (feature, value) in enumerate(
-                zip(self.feature_names, shap_values[0])
-            ):
-                feature_contributions.append(
-                    {
-                        "feature": feature,
-                        "contribution": float(value),
-                        "abs_contribution": abs(float(value)),
-                    }
+                feature_contributions = []
+                for i, (feature, value) in enumerate(
+                    zip(self.feature_names, shap_values[0])
+                ):
+                    feature_contributions.append(
+                        {
+                            "feature": feature,
+                            "contribution": float(value),
+                            "abs_contribution": abs(float(value)),
+                        }
+                    )
+
+                feature_contributions.sort(
+                    key=lambda x: x["abs_contribution"], reverse=True
                 )
 
-            feature_contributions.sort(
-                key=lambda x: x["abs_contribution"], reverse=True
-            )
+                result["shap_explanations"] = feature_contributions[:top_n]
+                result["base_value"] = float(self.shap_explainer.expected_value)
 
-            result["shap_explanations"] = feature_contributions[:top_n]
-            result["base_value"] = float(self.shap_explainer.expected_value)
+            except Exception as e:
+                print(f"Warning: Could not generate SHAP explanations: {e}")
+                result["shap_explanations"] = []
+                result["base_value"] = 0.0
 
         return result
 
@@ -688,9 +702,17 @@ class RiskModel:
         if "pipeline" in model_data:
             self.pipeline = model_data["pipeline"]
         else:
-            raise KeyError(
-                f"Model file doesn't have 'pipeline' key. Available keys: {available_keys}"
-            )
+            if "job_stability_pipeline" in available_keys:
+                raise TypeError(
+                    f"Error: This appears to be a behavioral traits model, not a risk prediction model. "
+                    f"Make sure you're loading the correct model file (risk_model.pkl, not behavioral_traits_model.pkl). "
+                    f"File path: {load_path}"
+                )
+            else:
+                raise KeyError(
+                    f"Model file doesn't have 'pipeline' key. Available keys: {available_keys}. "
+                    f"This may not be a valid RiskModel file. File path: {load_path}"
+                )
 
         self.feature_names = model_data["feature_names"]
         self.binary_features = model_data.get(

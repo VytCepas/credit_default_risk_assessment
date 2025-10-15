@@ -192,13 +192,34 @@ def predict_behavioral_traits(questionnaire_data: Dict[str, Any]) -> Dict[str, A
     return predictor.predict_traits(questionnaire_data)
 
 
-def get_behavioral_model_info() -> Dict[str, Any]:
-    """Get information about the behavioral traits model."""
-    model_path = Path(__file__).parent.parent / "assets" / "behavioral_traits_model.pkl"
-
-    return {
-        "model_name": "Behavioral Traits ML Model",
-        "model_path": str(model_path),
-        "model_exists": model_path.exists(),
-        "description": "ML-based behavioral traits analysis using Pipeline architecture",
+def get_available_behavioral_models() -> Dict[str, Dict[str, Any]]:
+    """Get available behavioral traits models.
+    
+    Returns dict similar to get_available_models() in risk_predictor.py
+    for consistency in the UI.
+    """
+    assets_dir = Path(__file__).parent.parent / "assets"
+    
+    potential_models = {
+        "behavioral_traits_model": {
+            "path": assets_dir / "behavioral_traits_model.pkl",
+            "display_name": "Behavioral Traits Model",
+            "description": "Analyzes job stability, payment behavior, and financial responsibility traits",
+            "icon": "🎭",
+            "type": "behavioral",
+        },
     }
+    
+    # Only return models that actually exist
+    available_models = {}
+    for model_key, model_info in potential_models.items():
+        if model_info["path"].exists():
+            available_models[model_key] = {
+                "path": str(model_info["path"]),
+                "display_name": model_info["display_name"],
+                "description": model_info["description"],
+                "icon": model_info["icon"],
+                "type": model_info["type"],
+            }
+    
+    return available_models

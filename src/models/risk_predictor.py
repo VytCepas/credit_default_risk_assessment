@@ -25,7 +25,11 @@ def load_risk_predictor(model_path: str):
 
 
 def get_available_models():
-    """Get available Risk Prediction model file paths by checking what models actually exist."""
+    """Get available Risk Prediction model file paths by checking what models actually exist.
+
+    Note: This only returns RISK PREDICTION models, not behavioral traits models.
+    Behavioral traits model is handled separately by behavioral_predictor.py
+    """
     assets_dir = Path(__file__).parent.parent / "assets"
 
     potential_models = {
@@ -35,36 +39,19 @@ def get_available_models():
             "description": "Enhanced loan default risk assessment model with binary feature optimization and standardization",
             "icon": "🎯",
         },
-        "behavioral_traits_model": {
-            "path": assets_dir / "behavioral_traits_model.pkl",
-            "display_name": "Behavioral Traits Model",
-            "description": "Model incorporating behavioral traits for risk assessment",
-            "icon": "🧠",
-        },
-        "imbalanced_fixed_model": {
-            "path": assets_dir / "imbalanced_fixed_model.pkl",
-            "display_name": "Imbalanced Fixed Model",
-            "description": "Legacy risk assessment model with class balancing",
-            "icon": "⚖️",
-        },
-        "home_credit_model": {
-            "path": assets_dir / "home_credit_model.pkl",
-            "display_name": "Home Credit Risk Model",
-            "description": "Primary loan default risk assessment model",
-            "icon": "🏠",
-        },
-        "fraud_detection_model": {
-            "path": assets_dir / "fraud_detection_model.pkl",
-            "display_name": "Fraud Detection Model",
-            "description": "Fraud risk assessment model",
-            "icon": "🚨",
-        },
-        "income_verification_model": {
-            "path": assets_dir / "income_verification_model.pkl",
-            "display_name": "Income Verification Model",
-            "description": "Income stability and verification assessment",
-            "icon": "💰",
-        },
+        # Note: Other models below may not exist yet
+        # "imbalanced_fixed_model": {
+        #     "path": assets_dir / "imbalanced_fixed_model.pkl",
+        #     "display_name": "Imbalanced Fixed Model",
+        #     "description": "Legacy risk assessment model with class balancing",
+        #     "icon": "⚖️",
+        # },
+        # "home_credit_model": {
+        #     "path": assets_dir / "home_credit_model.pkl",
+        #     "display_name": "Home Credit Risk Model",
+        #     "description": "Primary loan default risk assessment model",
+        #     "icon": "🏠",
+        # },
     }
 
     # Only return models that actually exist

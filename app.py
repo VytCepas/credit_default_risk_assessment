@@ -12,7 +12,7 @@ from src.models.risk_predictor import (
 )
 from src.models.behavioral_predictor import (
     predict_behavioral_traits,
-    get_behavioral_model_info,
+    get_available_behavioral_models,
 )
 
 st.set_page_config(
@@ -27,6 +27,8 @@ logger = logging.getLogger(__name__)
 
 
 AVAILABLE_MODELS = get_available_models()
+AVAILABLE_BEHAVIORAL_MODELS = get_available_behavioral_models()
+ALL_MODELS = {**AVAILABLE_MODELS, **AVAILABLE_BEHAVIORAL_MODELS}
 
 
 def load_custom_css():
@@ -137,19 +139,30 @@ def display_model_status():
         st.header("System Status")
 
         # Show available models
-        if AVAILABLE_MODELS:
-            st.success(f"✅ {len(AVAILABLE_MODELS)} model(s) available")
+        total_models = len(ALL_MODELS)
+        if total_models > 0:
+            st.success(f"✅ {total_models} model(s) available")
 
             with st.expander("📋 Available Models"):
-                for model_key, model_info in AVAILABLE_MODELS.items():
-                    model_path = Path(model_info["path"])
-                    if model_path.exists():
-                        model_size = model_path.stat().st_size / (1024 * 1024)  # MB
-                        st.write(
-                            f"{model_info['icon']} **{model_info['display_name']}**"
-                        )
-                        st.write(f"Size: {model_size:.1f} MB")
+                if AVAILABLE_MODELS:
+                    st.markdown("**🎯 Risk Prediction Models**")
+                    for model_key, model_info in AVAILABLE_MODELS.items():
+                        model_path = Path(model_info["path"])
+                        if model_path.exists():
+                            model_size = model_path.stat().st_size / (1024 * 1024)  # MB
+                            st.write(f"{model_info['description']}")
+                            st.write(f"Size: {model_size:.1f} MB")
+                
+                if AVAILABLE_BEHAVIORAL_MODELS:
+                    if AVAILABLE_MODELS:
                         st.write("---")
+                    st.markdown("**🎭 Behavioral Analysis Model**")
+                    for model_key, model_info in AVAILABLE_BEHAVIORAL_MODELS.items():
+                        model_path = Path(model_info["path"])
+                        if model_path.exists():
+                            model_size = model_path.stat().st_size / (1024 * 1024)  # MB
+                            st.write(f"{model_info['description']}")
+                            st.write(f"Size: {model_size:.1f} MB")
 
         else:
             st.error("❌ No models found")
@@ -183,16 +196,28 @@ def create_navigation_sidebar():
         if st.session_state.get("assessment_completed", False):
             st.markdown("**Assessment Results:**")
 
-            if len(AVAILABLE_MODELS) > 1:
-                if st.button("📊 Model Comparison", use_container_width=True):
-                    st.session_state.current_page = "comparison"
-                    st.rerun()
+            if AVAILABLE_MODELS:
+                st.markdown("*🎯 Risk Prediction:*")
+                
+                if len(AVAILABLE_MODELS) > 1:
+                    if st.button("📊 Model Comparison", use_container_width=True):
+                        st.session_state.current_page = "comparison"
+                        st.rerun()
 
-            for model_key, model_info in AVAILABLE_MODELS.items():
-                button_label = f"{model_info['icon']} {model_info['display_name']}"
-                if st.button(button_label, use_container_width=True):
-                    st.session_state.current_page = model_key
-                    st.rerun()
+                for model_key, model_info in AVAILABLE_MODELS.items():
+                    button_label = f"{model_info['icon']} {model_info['display_name']}"
+                    if st.button(button_label, use_container_width=True, key=f"nav_{model_key}"):
+                        st.session_state.current_page = model_key
+                        st.rerun()
+            
+            if AVAILABLE_BEHAVIORAL_MODELS:
+                st.markdown("*🎭 Behavioral Analysis:*")
+                
+                for model_key, model_info in AVAILABLE_BEHAVIORAL_MODELS.items():
+                    button_label = f"{model_info['icon']} {model_info['display_name']}"
+                    if st.button(button_label, use_container_width=True, key=f"nav_{model_key}"):
+                        st.session_state.current_page = model_key
+                        st.rerun()
 
         st.markdown("---")
         st.markdown("**🔮 Planned Features:**")
@@ -495,6 +520,97 @@ def show_model_results_page(model_key: str):
                 st.rerun()
 
 
+def show_behavioral_model_page(model_key: str):
+    """Display behavioral traits model results"""
+    if model_key not in AVAILABLE_BEHAVIORAL_MODELS:
+        st.error(f"❌ Behavioral model '{model_key}' not found")
+        return
+
+    if not st.session_state.get("assessment_completed", False):
+        st.warning("⚠️ Please complete the questionnaire first")
+        if st.button("📝 Go to Questionnaire"):
+            st.session_state.current_page = "questionnaire"
+            st.rerun()
+        return
+
+    model_info = AVAILABLE_BEHAVIORAL_MODELS[model_key]
+    
+    st.markdown(
+        f'<div class="section-header">{model_info["icon"]} {model_info["display_name"]}</div>',
+        unsafe_allow_html=True,
+    )
+    
+    st.info(f"📋 **Model Description:** {model_info['description']}")
+    
+    try:
+        with st.spinner("🎭 Analyzing behavioral traits..."):
+            behavioral_traits = predict_behavioral_traits(
+                st.session_state.questionnaire_data
+            )
+        
+        if "error" in behavioral_traits:
+            st.error(f"❌ Error: {behavioral_traits['error']}")
+        else:
+            behavioral_display = create_behavioral_traits_display()
+            behavioral_display.display_behavioral_traits(behavioral_traits)
+            
+            with st.expander("ℹ️ About Behavioral Traits Analysis", expanded=False):
+                st.markdown("""
+                ### What are Behavioral Traits?
+                
+                This analysis evaluates three key dimensions of borrower behavior:
+                
+                **🏢 Job Stability**
+                - Evaluates employment history and stability
+                - Considers years employed, income type, and age
+                - Higher scores indicate more stable employment
+                
+                **💳 Payment Behavior**
+                - Assesses financial management patterns
+                - Analyzes income levels, credit amounts, and annuity payments
+                - Higher scores suggest better payment reliability
+                
+                **📊 Financial Responsibility**
+                - Measures overall financial maturity
+                - Considers family obligations, housing, and assets
+                - Higher scores indicate stronger financial responsibility
+                
+                ### How is it different from Risk Prediction?
+                
+                - **Risk Prediction**: Focuses on *likelihood of default*
+                - **Behavioral Traits**: Focuses on *underlying characteristics* that influence behavior
+                
+                Both analyses complement each other to provide a comprehensive assessment.
+                """)
+    
+    except Exception as e:
+        st.error(f"❌ Error loading behavioral analysis: {str(e)}")
+        logger.error(f"Behavioral traits display error: {e}")
+        
+        with st.expander("🔍 Error Details"):
+            st.exception(e)
+    
+    # Show questionnaire responses
+    with st.expander("📋 View Questionnaire Responses", expanded=False):
+        questionnaire = create_questionnaire_form()
+        questionnaire.display_summary(st.session_state.questionnaire_data)
+    
+    st.markdown("---")
+    col1, col2, col3 = st.columns([1, 2, 1])
+    
+    with col1:
+        if st.button("⬅️ Back to Questionnaire", key="behavioral_back"):
+            st.session_state.current_page = "questionnaire"
+            st.rerun()
+    
+    with col2:
+        if AVAILABLE_MODELS:
+            if st.button("🎯 View Risk Prediction", key="to_risk"):
+                first_risk_model = list(AVAILABLE_MODELS.keys())[0]
+                st.session_state.current_page = first_risk_model
+                st.rerun()
+
+
 def show_model_comparison_page():
     """Display comparison of all model results"""
     if not st.session_state.get("assessment_completed", False):
@@ -632,6 +748,8 @@ def main():
         show_future_features_page()
     elif current_page in AVAILABLE_MODELS:
         show_model_results_page(current_page)
+    elif current_page in AVAILABLE_BEHAVIORAL_MODELS:
+        show_behavioral_model_page(current_page)
     else:
         st.session_state.current_page = "questionnaire"
         st.rerun()
