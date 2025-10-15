@@ -5,7 +5,12 @@ import pandas as pd
 
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.compose import ColumnTransformer
-from sklearn.preprocessing import StandardScaler, OneHotEncoder, RobustScaler, PowerTransformer
+from sklearn.preprocessing import (
+    StandardScaler,
+    OneHotEncoder,
+    RobustScaler,
+    PowerTransformer,
+)
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.metrics import roc_auc_score, balanced_accuracy_score, f1_score
@@ -45,7 +50,7 @@ class QuestionnaireToFeatures(BaseEstimator, TransformerMixin):
     @staticmethod
     def _convert_binary(value):
         """Convert binary values to 0 or 1."""
-        if value is None or value == '':
+        if value is None or value == "":
             return 0
         if isinstance(value, str):
             return 1 if value.lower() in ["yes", "y", "true", "1"] else 0
@@ -56,18 +61,18 @@ class QuestionnaireToFeatures(BaseEstimator, TransformerMixin):
     @staticmethod
     def _convert_gender(value):
         """Convert gender to binary (1 for Male, 0 for Female)."""
-        if value is None or value == '':
+        if value is None or value == "":
             return 0
         if isinstance(value, str):
             return 1 if value.upper() in ["M", "MALE"] else 0
         if isinstance(value, (int, float)):
             return int(value) if value in [0, 1] else 0
         return 0
-    
+
     @staticmethod
     def _convert_contract_type(value):
         """Convert contract type to binary (1 for Cash loans, 0 for Revolving loans)."""
-        if value is None or value == '':
+        if value is None or value == "":
             return 1  # Default to Cash loans
         if isinstance(value, str):
             return 1 if "cash" in value.lower() else 0
@@ -100,20 +105,31 @@ class QuestionnaireToFeatures(BaseEstimator, TransformerMixin):
                 for col in self.expected_columns:
                     if col not in df.columns:
                         df[col] = np.nan
-                
+
                 # Ensure proper dtypes for each column type
-                numeric_cols = ["age_years", "years_employed", "num_children", "num_family_members", 
-                                "total_income", "credit_amount", "loan_annuity"]
+                numeric_cols = [
+                    "age_years",
+                    "years_employed",
+                    "num_children",
+                    "num_family_members",
+                    "total_income",
+                    "credit_amount",
+                    "loan_annuity",
+                ]
                 binary_cols = ["gender", "owns_car", "owns_housing", "contract_type"]
-                
+
                 for col in numeric_cols:
                     if col in df.columns:
-                        df[col] = pd.to_numeric(df[col], errors='coerce')
-                
+                        df[col] = pd.to_numeric(df[col], errors="coerce")
+
                 for col in binary_cols:
                     if col in df.columns:
-                        df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0).astype(int)
-                
+                        df[col] = (
+                            pd.to_numeric(df[col], errors="coerce")
+                            .fillna(0)
+                            .astype(int)
+                        )
+
                 return df[self.expected_columns]
             return pd.DataFrame([features])
 
@@ -211,7 +227,7 @@ class DataPreprocessor(BaseEstimator, TransformerMixin):
             "housing_type",
             "defaulted",
         ]
-        
+
         available_columns = [col for col in expected_order if col in df.columns]
         return df[available_columns]
 
@@ -629,10 +645,10 @@ class RiskModel:
 
         return result
 
-    def save(self, filepath: str = "pipeline_risk_model.pkl"):
+    def save(self, filepath: str = "streamlit_app/src/assets/risk_model.pkl"):
         if not self.is_trained:
             raise ValueError("Model must be trained before saving")
-    
+
         if Path(filepath).is_absolute():
             save_path = Path(filepath)
         else:
@@ -655,8 +671,8 @@ class RiskModel:
 
         print(f"Model saved to: {save_path}")
 
-    def load(self, filepath: str = "pipeline_risk_model.pkl"):
-        load_path = self.data_directory.parent / filepath
+    def load(self, filepath: str = "streamlit_app/src/assets/risk_model.pkl"):
+        load_path = Path(filepath)
 
         if not load_path.exists():
             raise FileNotFoundError(f"Model file not found: {load_path}")
@@ -666,16 +682,20 @@ class RiskModel:
 
         if not isinstance(model_data, dict):
             raise ValueError(f"Expected dict, got {type(model_data)}")
-        
+
         available_keys = list(model_data.keys())
-        
+
         if "pipeline" in model_data:
             self.pipeline = model_data["pipeline"]
         else:
-            raise KeyError(f"Model file doesn't have 'pipeline' key. Available keys: {available_keys}")
+            raise KeyError(
+                f"Model file doesn't have 'pipeline' key. Available keys: {available_keys}"
+            )
 
         self.feature_names = model_data["feature_names"]
-        self.binary_features = model_data.get("binary_features", ["gender", "owns_car", "owns_housing"])
+        self.binary_features = model_data.get(
+            "binary_features", ["gender", "owns_car", "owns_housing"]
+        )
         self.categorical_features = model_data["categorical_features"]
         self.numerical_features = model_data["numerical_features"]
         self.shap_explainer = model_data.get("shap_explainer")
@@ -756,7 +776,7 @@ def main():
         for i, feat in enumerate(prediction["shap_explanations"][:5], 1):
             print(f"  {i}. {feat['feature']}: {feat['contribution']:+.4f}")
 
-    model.save(filepath="risk_prediction_model.pkl")
+    model.save()
 
     print("\nDone!")
 

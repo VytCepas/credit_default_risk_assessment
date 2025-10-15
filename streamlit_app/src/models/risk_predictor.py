@@ -28,7 +28,7 @@ def get_available_models():
 
     potential_models = {
         "risk_prediction_model": {
-            "path": assets_dir / "risk_prediction_model.pkl",
+            "path": assets_dir / "risk_model.pkl",
             "display_name": "Risk Prediction Model",
             "description": "Enhanced loan default risk assessment model with binary feature optimization and standardization",
             "icon": "🎯",
