@@ -2,15 +2,15 @@ import streamlit as st
 from pathlib import Path
 import logging
 
-from streamlit_app.src.components.questionnaire import create_questionnaire_form
-from streamlit_app.src.components.results import create_results_display
-from streamlit_app.src.components.behavioral_traits import create_behavioral_traits_display
-from streamlit_app.src.models.risk_predictor import (
+from src.components.questionnaire import create_questionnaire_form
+from src.components.results import create_results_display
+from src.components.behavioral_traits import create_behavioral_traits_display
+from src.models.risk_predictor import (
     load_risk_predictor,
     get_available_models,
     predict_with_explanations,
 )
-from streamlit_app.src.models.behavioral_predictor import (
+from src.models.behavioral_predictor import (
     predict_behavioral_traits,
     get_behavioral_model_info,
 )
@@ -150,7 +150,7 @@ def display_model_status():
                         )
                         st.write(f"Size: {model_size:.1f} MB")
                         st.write("---")
-                        
+
                 # Show behavioral traits model status
                 behavioral_info = get_behavioral_model_info()
                 behavioral_path = Path(behavioral_info["model_path"])
@@ -219,52 +219,56 @@ def show_future_features_page():
         unsafe_allow_html=True,
     )
 
-    st.markdown("""
+    st.markdown(
+        """
     <div class="info-box">
     <p>Our platform roadmap includes advanced analytics and ML capabilities currently in development.</p>
     </div>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
     # Core Feature Enhancements
     st.markdown("### � Core Enhancements (In Development)")
-    
+
     features = [
         {
             "icon": "💰",
             "name": "Financial Health Analysis",
             "desc": "Optimized financial ratios and stability metrics",
-            "status": "Q1 2026"
+            "status": "Q1 2026",
         },
         {
             "icon": "📊",
             "name": "Statistical Inference Analysis",
             "desc": "Comprehensive hypothesis testing and validation",
-            "status": "Q2 2026"
+            "status": "Q2 2026",
         },
         {
             "icon": "🌍",
             "name": "Geodemographic Insights",
             "desc": "Regional patterns and demographic clustering",
-            "status": "Q2 2026"
+            "status": "Q2 2026",
         },
         {
             "icon": "🚨",
             "name": "Warnings & Red Flags System",
             "desc": "1M+ anomaly patterns and fraud detection",
-            "status": "Q1 2026"
+            "status": "Q1 2026",
         },
         {
             "icon": "🔄",
             "name": "What-if Analysis Tooling",
             "desc": "Interactive scenario testing and optimization",
-            "status": "Q1 2026"
-        }
+            "status": "Q1 2026",
+        },
     ]
 
     cols = st.columns(2)
     for idx, feature in enumerate(features):
         with cols[idx % 2]:
-            st.markdown(f"""
+            st.markdown(
+                f"""
             <div style="
                 border: 2px dashed #e0e0e0;
                 border-radius: 8px;
@@ -272,28 +276,31 @@ def show_future_features_page():
                 margin: 8px 0;
                 background-color: #fafafa;
             ">
-                <h4 style="margin: 0 0 8px 0;">{feature['icon']} {feature['name']}</h4>
-                <p style="color: #666; margin: 0 0 8px 0; font-size: 0.9em;">{feature['desc']}</p>
-                <p style="margin: 0; font-size: 0.85em;"><strong>ETA:</strong> {feature['status']}</p>
+                <h4 style="margin: 0 0 8px 0;">{feature["icon"]} {feature["name"]}</h4>
+                <p style="color: #666; margin: 0 0 8px 0; font-size: 0.9em;">{feature["desc"]}</p>
+                <p style="margin: 0; font-size: 0.85em;"><strong>ETA:</strong> {feature["status"]}</p>
             </div>
-            """, unsafe_allow_html=True)
+            """,
+                unsafe_allow_html=True,
+            )
 
     # Additional ML Models
     st.markdown("---")
     st.markdown("### 🤖 Additional ML Models (Planned)")
-    
+
     models = [
         {"icon": "🚨", "name": "Fraud Detection Model", "eta": "Q1 2026"},
         {"icon": "💰", "name": "Income Verification Model", "eta": "Q2 2026"},
         {"icon": "💳", "name": "Credit Limit Optimizer", "eta": "Q2 2026"},
         {"icon": "⚠️", "name": "Early Warning System", "eta": "Q3 2026"},
-        {"icon": "🎯", "name": "Cross-sell Propensity", "eta": "Q3 2026"}
+        {"icon": "🎯", "name": "Cross-sell Propensity", "eta": "Q3 2026"},
     ]
 
     cols = st.columns(3)
     for idx, model in enumerate(models):
         with cols[idx % 3]:
-            st.markdown(f"""
+            st.markdown(
+                f"""
             <div style="
                 text-align: center;
                 padding: 10px;
@@ -302,11 +309,13 @@ def show_future_features_page():
                 margin: 5px 0;
                 background-color: #f9f9f9;
             ">
-                <div style="font-size: 1.5em;">{model['icon']}</div>
-                <div style="font-size: 0.85em; font-weight: bold; margin: 5px 0;">{model['name']}</div>
-                <div style="font-size: 0.75em; color: #888;">{model['eta']}</div>
+                <div style="font-size: 1.5em;">{model["icon"]}</div>
+                <div style="font-size: 0.85em; font-weight: bold; margin: 5px 0;">{model["name"]}</div>
+                <div style="font-size: 0.75em; color: #888;">{model["eta"]}</div>
             </div>
-            """, unsafe_allow_html=True)
+            """,
+                unsafe_allow_html=True,
+            )
 
     st.markdown("---")
     if st.button("⬅️ Back to Assessment", use_container_width=True):
@@ -430,10 +439,12 @@ def show_model_results_page(model_key: str):
         shap_values=model_results["shap_values"],
         processed_features=model_results["processed_features"],
     )
-    
+
     # Add Behavioral Traits Analysis
     try:
-        behavioral_traits = predict_behavioral_traits(st.session_state.questionnaire_data)
+        behavioral_traits = predict_behavioral_traits(
+            st.session_state.questionnaire_data
+        )
         behavioral_display = create_behavioral_traits_display()
         behavioral_display.display_behavioral_traits(behavioral_traits)
     except Exception as e:

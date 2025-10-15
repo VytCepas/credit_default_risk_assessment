@@ -10,7 +10,8 @@ def load_risk_predictor(model_path: str):
         if RiskModel is None:
             raise ImportError("RiskModel not available")
 
-        project_root = Path(__file__).parent.parent.parent.parent
+        # Project root is now 2 levels up from src/models/
+        project_root = Path(__file__).parent.parent.parent
         data_dir = project_root / "data"
 
         model = RiskModel(data_directory=str(data_dir))

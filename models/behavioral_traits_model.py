@@ -162,9 +162,14 @@ class BehavioralTraitsModel:
         max_depth: int = 5,
     ) -> Pipeline:
         """Build preprocessing and modeling pipeline for specific behavioral trait."""
-        
+
         if target_type == "job_stability":
-            selected_categorical = ["gender", "income_type", "education_level", "owns_housing"]
+            selected_categorical = [
+                "gender",
+                "income_type",
+                "education_level",
+                "owns_housing",
+            ]
             selected_numerical = ["age_years", "years_employed", "total_income"]
         elif target_type == "payment_behavior":
             selected_categorical = ["family_status", "owns_car", "owns_housing"]
@@ -194,18 +199,20 @@ class BehavioralTraitsModel:
             verbose_feature_names_out=False,
         )
 
-        pipeline = Pipeline([
-            ("preprocessing", preprocessor),
-            (
-                "regressor",
-                GradientBoostingRegressor(
-                    n_estimators=n_estimators,
-                    learning_rate=learning_rate,
-                    max_depth=max_depth,
-                    random_state=self.random_state,
+        pipeline = Pipeline(
+            [
+                ("preprocessing", preprocessor),
+                (
+                    "regressor",
+                    GradientBoostingRegressor(
+                        n_estimators=n_estimators,
+                        learning_rate=learning_rate,
+                        max_depth=max_depth,
+                        random_state=self.random_state,
+                    ),
                 ),
-            ),
-        ])
+            ]
+        )
 
         return pipeline
 
@@ -239,10 +246,10 @@ class BehavioralTraitsModel:
             "flag_phone",
             "flag_email",
         ]
-        
+
         available_features = [f for f in behavioral_features if f in df.columns]
         df = df[available_features]
-        
+
         preprocessor = BehavioralDataPreprocessor()
         df = preprocessor.fit_transform(df)
         return df
@@ -257,7 +264,9 @@ class BehavioralTraitsModel:
 
         if "total_income" in df.columns:
             log_income = np.log1p(df["total_income"])
-            income_percentile = (log_income - log_income.min()) / (log_income.max() - log_income.min())
+            income_percentile = (log_income - log_income.min()) / (
+                log_income.max() - log_income.min()
+            )
             targets["payment_behavior"] = income_percentile * 100
 
         if all(col in df.columns for col in ["age_years", "education_level"]):
@@ -272,7 +281,7 @@ class BehavioralTraitsModel:
                 "Academic degree": 50,
             }
             education_score = df["education_level"].map(education_mapping).fillna(20)
-            
+
             targets["responsibility"] = np.clip(age_score + education_score, 0, 100)
 
         return targets
@@ -285,22 +294,22 @@ class BehavioralTraitsModel:
         """Train behavioral trait models using Pipeline architecture."""
         targets = self.create_behavioral_targets(data)
         results = {}
-        
+
         if "job_stability" in targets:
             self.job_stability_pipeline = self._build_pipeline("job_stability")
-            
+
             X = data[self.categorical_features + self.numerical_features].fillna(0)
             y = targets["job_stability"]
-            
+
             X_train, X_test, y_train, y_test = train_test_split(
                 X, y, test_size=test_size, random_state=self.random_state
             )
-            
+
             self.job_stability_pipeline.fit(X_train, y_train)
-            
+
             train_score = self.job_stability_pipeline.score(X_train, y_train)
             test_score = self.job_stability_pipeline.score(X_test, y_test)
-            
+
             results["job_stability"] = {
                 "train_r2": train_score,
                 "test_r2": test_score,
@@ -309,19 +318,19 @@ class BehavioralTraitsModel:
 
         if "payment_behavior" in targets:
             self.payment_behavior_pipeline = self._build_pipeline("payment_behavior")
-            
+
             X = data[self.categorical_features + self.numerical_features].fillna(0)
             y = targets["payment_behavior"]
-            
+
             X_train, X_test, y_train, y_test = train_test_split(
                 X, y, test_size=test_size, random_state=self.random_state
             )
-            
+
             self.payment_behavior_pipeline.fit(X_train, y_train)
-            
+
             train_score = self.payment_behavior_pipeline.score(X_train, y_train)
             test_score = self.payment_behavior_pipeline.score(X_test, y_test)
-            
+
             results["payment_behavior"] = {
                 "train_r2": train_score,
                 "test_r2": test_score,
@@ -330,19 +339,19 @@ class BehavioralTraitsModel:
 
         if "responsibility" in targets:
             self.responsibility_pipeline = self._build_pipeline("responsibility")
-            
+
             X = data[self.categorical_features + self.numerical_features].fillna(0)
             y = targets["responsibility"]
-            
+
             X_train, X_test, y_train, y_test = train_test_split(
                 X, y, test_size=test_size, random_state=self.random_state
             )
-            
+
             self.responsibility_pipeline.fit(X_train, y_train)
-            
+
             train_score = self.responsibility_pipeline.score(X_train, y_train)
             test_score = self.responsibility_pipeline.score(X_test, y_test)
-            
+
             results["responsibility"] = {
                 "train_r2": train_score,
                 "test_r2": test_score,
@@ -369,10 +378,13 @@ class BehavioralTraitsModel:
                     client_df[col] = 0.0
                 else:
                     client_df[col] = "Unknown"
-        
-        for col in (self.categorical_features or []):
+
+        for col in self.categorical_features or []:
             if col in client_df.columns:
-                if client_df[col].dtype == bool or str(client_df[col].iloc[0]) in ['True', 'False']:
+                if client_df[col].dtype == bool or str(client_df[col].iloc[0]) in [
+                    "True",
+                    "False",
+                ]:
                     client_df[col] = client_df[col].astype(str)
 
         results = {}
@@ -390,7 +402,9 @@ class BehavioralTraitsModel:
             results["responsibility"] = max(0, min(100, pred))
 
         scores = [v for v in results.values() if v is not None]
-        results["overall_behavioral_score"] = sum(scores) / len(scores) if scores else 50
+        results["overall_behavioral_score"] = (
+            sum(scores) / len(scores) if scores else 50
+        )
 
         return results
 
@@ -422,7 +436,7 @@ class BehavioralTraitsModel:
         self.numerical_features = model_data["numerical_features"]
         self.is_trained = model_data["is_trained"]
         self.random_state = model_data.get("random_state", RANDOM_STATE)
-        
+
         print(f"Behavioral traits models loaded from {filepath}")
 
 
@@ -431,10 +445,10 @@ def train_behavioral_model():
     model = BehavioralTraitsModel()
     data = model.load_and_preprocess_data("application_train.parquet")
     results = model.train(data)
-    
-    model_path = Path("streamlit_app/src/assets/behavioral_traits_model.pkl")
+
+    model_path = Path("src/assets/behavioral_traits_model.pkl")
     model.save(model_path)
-    
+
     return model
 
 

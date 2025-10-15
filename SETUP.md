@@ -14,10 +14,14 @@ poetry install
 poetry run python retrain_risk_model.py
 
 # Run the app
-poetry run streamlit run streamlit_app/app.py
+poetry run streamlit run app.py
+
+streamlit run app.py
 ```
 
 App opens at `http://localhost:8501`
+
+**Note**: For Streamlit Cloud deployment, use `app.py` as the main file path.
 
 ## Usage
 1. Fill out the questionnaire (personal, employment, loan details)
