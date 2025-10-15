@@ -151,17 +151,6 @@ def display_model_status():
                         st.write(f"Size: {model_size:.1f} MB")
                         st.write("---")
 
-                # Show behavioral traits model status
-                behavioral_info = get_behavioral_model_info()
-                behavioral_path = Path(behavioral_info["model_path"])
-                if behavioral_path.exists():
-                    model_size = behavioral_path.stat().st_size / (1024 * 1024)  # MB
-                    st.write("🎭 **Behavioral Traits Model**")
-                    st.write(f"Size: {model_size:.1f} MB")
-                    st.success("✅ Behavioral analysis enabled")
-                else:
-                    st.write("🎭 **Behavioral Traits Model**")
-                    st.warning("⚠️ Model not found")
         else:
             st.error("❌ No models found")
             st.warning("Please train models first using the training script")
