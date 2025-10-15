@@ -2,6 +2,9 @@
 
 A machine learning web application for loan default risk prediction with interactive questionnaire and behavioral analysis.
 
+## Streamlit App
+The application can be accessed via link: https://creditdefaultriskassessment-3gbekkxdejds9hjbevvbn2.streamlit.app
+
 ## Overview
 
 This project implements a credit risk assessment system using machine learning to predict loan default probability. The system includes:
@@ -39,7 +42,6 @@ This project implements a credit risk assessment system using machine learning t
 |--------|---------------|----------------|
 | ROC-AUC | 0.6272 | 0.6272 |
 | Balanced Accuracy | 0.5424 | 0.5844 |
-| F1-Score | 0.1592 | 0.1941 |
 
 **Total Features**: 32 (7 numerical + 4 binary + 21 one-hot encoded categorical)
 

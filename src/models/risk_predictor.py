@@ -35,6 +35,12 @@ def get_available_models():
             "description": "Enhanced loan default risk assessment model with binary feature optimization and standardization",
             "icon": "🎯",
         },
+        "behavioral_traits_model": {
+            "path": assets_dir / "behavioral_traits_model.pkl",
+            "display_name": "Behavioral Traits Model",
+            "description": "Model incorporating behavioral traits for risk assessment",
+            "icon": "🧠",
+        },
         "imbalanced_fixed_model": {
             "path": assets_dir / "imbalanced_fixed_model.pkl",
             "display_name": "Imbalanced Fixed Model",
