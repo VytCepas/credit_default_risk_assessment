@@ -18,6 +18,3 @@ env/
 *.env
 .env
 .env.local
-
-# University assignment notes
-project_docs
