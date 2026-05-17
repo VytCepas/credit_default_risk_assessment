@@ -324,6 +324,16 @@ class RiskModel:
             verbose_feature_names_out=False,
         )
 
+        # SMOTETomek combines two complementary techniques:
+        # - SMOTE (Synthetic Minority Over-sampling Technique): generates synthetic positive
+        #   samples by interpolating between existing minority-class neighbours. k_neighbors=7
+        #   was chosen to maximise diversity of synthetic samples while staying robust to
+        #   noise (higher k = smoother decision boundary in sparse regions).
+        # - TomekLinks: removes borderline majority-class samples that sit closest to the
+        #   minority class, cleaning the decision boundary after oversampling.
+        # Both steps run INSIDE the pipeline to prevent data leakage: synthetic samples are
+        # created only from training-fold data during cross-validation.
+        # Related issue: #15
         pipeline = ImbPipeline(
             [
                 ("preprocessing", preprocessor),
