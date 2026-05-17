@@ -1,17 +1,43 @@
+"""
+Questionnaire form component for the Credit Default Risk Assessment Streamlit app.
+
+Collects the 15 input fields required by the risk prediction pipeline and passes
+them to QuestionnaireToFeatures for preprocessing before model inference.
+
+Field groups
+------------
+Personal Information : gender, age
+Financial Information : total_income, employment_status, years_employed
+Education and Family : education_level, family_status, num_children, num_family_members
+Assets               : owns_car, owns_housing, housing_type
+Loan Details         : contract_type, credit_amount, loan_annuity
+
+All options in selectbox fields match the OneHotEncoder categories fitted during training.
+Adding or removing options here will cause an encoder mismatch and raise a ValueError.
+
+Related issue: #19
+"""
 import streamlit as st
 from typing import Any, Optional
 
 
 class QuestionnaireForm:
-    """
-    Interactive questionnaire used to collect the inputs for risk and behavioral scoring.
+    """Streamlit form collecting 15 user inputs for credit risk scoring.
+
+    Renders labelled widgets (selectbox, number_input) for each field,
+    validates required fields on submission, and returns a raw dict
+    passed directly to ``QuestionnaireToFeatures.transform()``.
     """
 
     def __init__(self):
         self.questions = self._define_questions()
 
     def _define_questions(self) -> dict[str, dict[str, Any]]:
-        """Define all questionnaire questions with their properties"""
+        """Return the ordered field definitions used to render the form.
+
+        Each entry maps a field key to its widget configuration.
+        Keys must match the ``questionnaire_mapping`` in ``QuestionnaireToFeatures``.
+        """
         return {
             # Personal Information
             "gender": {
