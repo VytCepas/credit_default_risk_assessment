@@ -74,18 +74,47 @@ Releasing in incremental MVPs reduces financial and technical risk. Each release
 
 ## 2. Project Roadmap / WBS
 
-### 6-Month Roadmap (May 2026 – November 2026)
+### 6-Month Roadmap (May 2026 – October 2026)
+
+> Date fields below are the values that must be entered on the board (GitHub Projects / Jira).  
+> Items only appear on a timeline/roadmap view when **both Start date and End date are set**.  
+> Current date: 2026-05-17.
+
+#### Epic Date Registry — enter these into the board
+
+| Epic ID | Epic Name | Start Date | End Date | Status | Owner(s) |
+|---------|-----------|------------|----------|--------|----------|
+| E1 | Data Acquisition & Preparation | 2026-04-28 | 2026-05-07 | ✅ Done | Laurynas |
+| E2 | Feature Engineering & Selection | 2026-04-28 | 2026-05-07 | ✅ Done | Laurynas, Vytautas |
+| E3 | ML Model Research & Optimisation | 2026-05-08 | 2026-06-15 | 🔄 Ongoing | Vytautas |
+| E4 | Model Explainability & Behavioural Analysis | 2026-05-08 | 2026-05-14 | ✅ Done | Vytautas |
+| E5 | Web Application Development | 2026-05-08 | 2026-05-14 | ✅ Done | Laurynas, Vytautas |
+| E6 | Testing & CI/CD | 2026-05-15 | 2026-05-27 | 🔄 In Progress | Laurynas, Vytautas |
+| E7 | Risk Management & Governance | 2026-05-15 | 2026-05-28 | 🔄 In Progress | Both |
+| E8 | MLOps & Long-Term Deployment | 2026-05-28 | 2026-10-31 | 🗓 Planned | Both |
+
+#### Visual Timeline
 
 ```
-Month 1   May 2026         ██ EPIC 1: Data Prep (DONE)    ██ EPIC 2: Model Dev (DONE)
-Month 2   June 2026        ██ EPIC 3: Model Research       ██ EPIC 4: Explainability (DONE)
-Month 3   July 2026        ██ EPIC 5: Web Application (DONE) ██ EPIC 6: Testing & CI/CD
-Month 4   August 2026      ██ EPIC 6: (continued)          ██ EPIC 7: Risk & Governance
-Month 5   September 2026   ██ EPIC 8: MLOps & Deployment
-Month 6   October 2026     ██ System monitoring & project handover
+         Apr  |  May W1  |  May W2  |  May W3  |  May W4  |  Jun–Jul  |  Aug–Oct
+              |          |          |          |          |           |
+E1 Data Prep  |██████████|          |          |          |           |
+E2 Features   |██████████|          |          |          |           |
+E3 ML Research|          |██████████|──────────|──────────|███████████|
+E4 Explain.   |          |██████████|          |          |           |
+E5 Web App    |          |██████████|          |          |           |
+E6 CI/CD+Test |          |          |██████████|██████████|           |
+E7 Risk Mgmt  |          |          |██████████|██████████|           |
+E8 MLOps      |          |          |          |          |███████████|███████████
+              |          |    TA-1  |          |   TA-2   |   TA-3    |
+              |          |  05-14   |          |  05-21   |  05-28    |
 ```
 
-> **Note:** Epics 1, 2, 4, and 5 are fully completed. Epic 3 (model research / hyperparameter optimisation and LightGBM comparison) is an ongoing research activity that continues after TA-2.
+> **Why E1–E2 start April 28, not May:** The project was initialized and all exploratory work (EDA, feature selection) was completed in the first week of development before the TA-1 defence. The 6-month window covers the full project lifecycle including the post-course MLOps phase.
+
+> **Why E3 spans April to June:** Model research is iterative. The baseline GBM was trained in Sprint 2; hyperparameter tuning and LightGBM comparison continue through Sprint 4.
+
+> **Board filtering tip:** To see which epics are active on any given date, filter by `Start date ≤ [date] AND End date ≥ [date]`. All 8 epics above have explicit dates so this filter works correctly.
 
 ---
 
@@ -595,6 +624,52 @@ lgbm_params = {
 
 ## 8. Sprint Board & Task States
 
+### Sprint Date Registry
+
+> These dates must be set on the **Sprint / Iteration** objects in the board tool so that roadmap and date-range filters work.  
+> Rule: an item is visible on a given date when `Sprint Start ≤ date ≤ Sprint End`.
+
+| Sprint | Name | Start Date | End Date | Milestone |
+|--------|------|------------|----------|-----------|
+| Sprint 1 | Spike: Data Exploration | 2026-04-28 | 2026-05-07 | TA-1 prep |
+| Sprint 2 | Model & Application Development | 2026-05-08 | 2026-05-21 | TA-1 → TA-2 defence |
+| Sprint 3 | CI/CD, Testing & Risk Management | 2026-05-15 | 2026-05-27 | TA-3 submission |
+| Sprint 4 | Model Improvement Research (Spike) | 2026-05-28 | 2026-06-15 | Post-TA-3 |
+
+> Sprint 2 and 3 overlap intentionally: Sprint 3 began on 2026-05-15 (mid-Sprint-2) to ensure CI/CD and test tasks reach Done before the TA-3 deadline.
+
+---
+
+### Task Date Registry
+
+> Each task needs a **Due Date** field so it appears when filtering by date. Dates below are the deadlines by which each task must reach Done.
+
+| Task ID | Title | Assigned To | Due Date | Sprint |
+|---------|-------|-------------|----------|--------|
+| T2-1 | `QuestionnaireToFeatures` transformer | Vytautas | 2026-05-14 | Sprint 2 |
+| T2-2 | SMOTETomek oversampling | Vytautas | 2026-05-14 | Sprint 2 |
+| T2-3 | GBM train + threshold optimise | Vytautas | 2026-05-14 | Sprint 2 |
+| T2-4 | Model evaluation metrics | Laurynas | 2026-05-14 | Sprint 2 |
+| T2-5 | Behavioural traits model | Laurynas | 2026-05-21 | Sprint 2 |
+| T2-6 | Serialise models to `src/assets/` | Vytautas | 2026-05-14 | Sprint 2 |
+| T2-7 | Questionnaire form component | Laurynas | 2026-05-21 | Sprint 2 |
+| T2-8 | Risk score + tier + SHAP results panel | Vytautas | 2026-05-21 | Sprint 2 |
+| T2-9 | Behavioural traits component | Laurynas | 2026-05-21 | Sprint 2 |
+| T2-10 | Wire all components in `app.py` | Vytautas | 2026-05-21 | Sprint 2 |
+| T2-11 | Deploy to Streamlit Cloud | Both | 2026-05-21 | Sprint 2 |
+| T3-1 | Unit test: `QuestionnaireToFeatures` | Vytautas | 2026-05-23 | Sprint 3 |
+| T3-2 | Unit test: `RiskModel` prediction | Vytautas | 2026-05-23 | Sprint 3 |
+| T3-3 | Integration test: form → risk score | Laurynas | 2026-05-25 | Sprint 3 |
+| T3-4 | GitHub Actions CI YAML | Laurynas | 2026-05-25 | Sprint 3 |
+| T3-5 | Risk management matrix | Both | 2026-05-27 | Sprint 3 |
+| T3-6 | Sprint retrospective | Both | 2026-05-27 | Sprint 3 |
+| T3-7 | Task estimation meeting + minutes | Both | 2026-05-26 | Sprint 3 |
+| T3-8 | LightGBM model comparison | Vytautas | 2026-06-10 | Sprint 4 |
+| T3-9 | RandomizedSearchCV on best model | Laurynas | 2026-06-10 | Sprint 4 |
+| VC-5 | Response time NFR verification | Vytautas | 2026-05-27 | Sprint 3 |
+
+---
+
 ### Board State Definitions
 
 | State | Description | Transition Condition |
@@ -607,7 +682,7 @@ lgbm_params = {
 
 **Backward transitions permitted:** Review → Testing if review identifies a defect; Testing → In Progress if test reveals a logic error.
 
-### Sprint 3 Board Snapshot (current, 2026-05-17)
+### Sprint 3 Board Snapshot (2026-05-17)
 
 ```
 BACKLOG            IN PROGRESS          TESTING         REVIEW      DONE
@@ -621,10 +696,21 @@ T3-9 SearchCV      T3-4 CI/CD yaml
 
 ### Board Filtering
 
-- By owner: `assignee:vc` / `assignee:lz`
-- By type: `label:[DI]` `label:[NFR]` `label:[FR]` `label:[US]`
-- By sprint: `sprint:1` … `sprint:4`
-- By priority: `priority:must-have` / `priority:should-have`
+**By date (timeline/roadmap view):**
+- `Sprint Start ≤ [selected date] ≤ Sprint End` — shows all sprints active on that date
+- `Due Date = [selected date]` — shows tasks due on that exact date
+- `Due Date ≤ [selected date]` — shows overdue + due tasks
+- Example: filtering on **2026-05-17** shows Sprint 2 (ends 05-21) and Sprint 3 (starts 05-15) — both active; all Sprint 3 tasks appear because their due dates fall within the sprint window
+
+**By owner:** `assignee:vc` / `assignee:lz`
+
+**By type:** `label:[DI]` · `label:[NFR]` · `label:[FR]` · `label:[US]`
+
+**By sprint:** `sprint:1` · `sprint:2` · `sprint:3` · `sprint:4`
+
+**By priority:** `priority:must-have` · `priority:should-have`
+
+**By epic:** `epic:E1` through `epic:E8` (links tasks to roadmap items)
 
 ---
 
