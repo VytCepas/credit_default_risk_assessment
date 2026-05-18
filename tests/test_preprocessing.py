@@ -9,12 +9,11 @@ Related issue: #53
 import sys
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from models.risk_model import QuestionnaireToFeatures
+from models.risk_model import QuestionnaireToFeatures  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Fixtures

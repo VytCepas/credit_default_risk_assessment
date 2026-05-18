@@ -79,8 +79,11 @@ class ResultsDisplay:
             card_style = self.risk_styles.get(risk_category, self.risk_styles["Error"])
             st.markdown(
                 f"""
-                <div style="text-align: center; padding: 10px; border-radius: 10px; 
-                    background-color: {card_style["background"]}; color: {card_style["text"]}; font-weight: bold; font-size: 18px; border: 1px solid {card_style["text"]};">
+                <div style="text-align: center; padding: 10px; border-radius: 10px;
+                    background-color: {card_style["background"]};
+                    color: {card_style["text"]};
+                    font-weight: bold; font-size: 18px;
+                    border: 1px solid {card_style["text"]};">
                     {risk_category}
                 </div>
                 """,
@@ -149,7 +152,8 @@ class ResultsDisplay:
 
             st.markdown("**Top 10 Most Important Features:**")
             st.caption(
-                "🔴 Red bars increase risk | 🟢 Green bars decrease risk | Bar length shows impact strength"
+                "🔴 Red bars increase risk | 🟢 Green bars decrease risk | "
+                "Bar length shows impact strength"
             )
 
             colors = [
@@ -219,20 +223,18 @@ class ResultsDisplay:
 
             with st.expander("ℹ️ How to interpret this chart"):
                 st.markdown(
-                    """
-                **Understanding Feature Impact:**
-                
-                - **Horizontal bars** show which factors had the most influence on your risk score
-                - **Red bars (→)** indicate features that *increased* your risk
-                - **Green bars (←)** indicate features that *decreased* your risk
-                - **Longer bars** = stronger impact on the final risk assessment
-                - **Numbers** show the exact SHAP value (impact magnitude)
-                
-                **Example interpretations:**
-                - A long red bar for "Total Income" means higher income increased risk in your case
-                - A long green bar for "Years Employed" means employment duration decreased risk
-                - Features closer to the top had the most significant impact
-                """
+                    "**Understanding Feature Impact:**\n\n"
+                    "- **Horizontal bars** show which factors had the most influence "
+                    "on your risk score\n"
+                    "- **Red bars (→)** indicate features that *increased* your risk\n"
+                    "- **Green bars (←)** indicate features that *decreased* your risk\n"
+                    "- **Longer bars** = stronger impact on the final risk assessment\n"
+                    "- **Numbers** show the exact SHAP value (impact magnitude)\n\n"
+                    "**Example interpretations:**\n"
+                    '- A long red bar for "Total Income" means higher income increased risk\n'
+                    '- A long green bar for "Years Employed" means employment duration '
+                    "decreased risk\n"
+                    "- Features closer to the top had the most significant impact"
                 )
 
         except (TypeError, ValueError, AttributeError, IndexError) as e:
@@ -241,13 +243,12 @@ class ResultsDisplay:
             st.write(f"- shap_values type: {type(shap_values)}")
             st.write(f"- processed_features type: {type(processed_features)}")
             if isinstance(shap_values, list):
-                st.write(
-                    f"- shap_values sample: {shap_values[:3] if len(shap_values) > 3 else shap_values}"
-                )
+                sample = shap_values[:3] if len(shap_values) > 3 else shap_values
+                st.write(f"- shap_values sample: {sample}")
             if isinstance(processed_features, list):
-                st.write(
-                    f"- processed_features sample: {processed_features[:3] if len(processed_features) > 3 else processed_features}"
-                )
+                pf = processed_features
+                sample = pf[:3] if len(pf) > 3 else pf
+                st.write(f"- processed_features sample: {sample}")
 
 
 def create_results_display() -> ResultsDisplay:
