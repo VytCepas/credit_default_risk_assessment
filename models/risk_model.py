@@ -9,8 +9,10 @@ Pipeline
 2. DataPreprocessor          — renames raw dataset columns, derives age/employment years,
                                encodes binary flags, imputes missing annuity/family size
 3. ColumnTransformer         — RobustScaler (numerical) | passthrough (binary) | OHE (categorical)
-4. SMOTETomek                — combined oversampling + Tomek-links cleaning for 8.1 % class imbalance
-5. GradientBoostingClassifier — trained with threshold optimised to 0.37 for maximum balanced accuracy
+4. SMOTETomek                — combined oversampling + Tomek-links cleaning for 8.1 % class
+                               imbalance
+5. GradientBoostingClassifier — trained with threshold optimised to 0.37 for maximum balanced
+                               accuracy
 
 Output
 ------
@@ -124,8 +126,8 @@ class QuestionnaireToFeatures(BaseEstimator, TransformerMixin):
                         ):
                             converted_value = np.nan
                         features[feature_name] = converted_value
-                    except (ValueError, TypeError) as e:
-                        # If conversion fails, keep original value for categorical or set nan for numeric
+                    except (ValueError, TypeError):
+                        # If conversion fails, keep original for categorical or set nan for numeric
                         if transformer in (float, int):
                             features[feature_name] = np.nan
                         else:
@@ -510,7 +512,7 @@ class RiskModel:
             print("\nRunning GridSearchCV...")
             grid_search.fit(X_train, y_train)
 
-            print(f"\nBest parameters found:")
+            print("\nBest parameters found:")
             for param, value in grid_search.best_params_.items():
                 print(f"    {param}: {value}")
             print(f"\nBest CV ROC-AUC: {grid_search.best_score_:.4f}")
@@ -796,9 +798,9 @@ class RiskModel:
         else:
             if "job_stability_pipeline" in available_keys:
                 raise TypeError(
-                    f"Error: This appears to be a behavioral traits model, not a risk prediction model. "
-                    f"Make sure you're loading the correct model file (risk_model.pkl, not behavioral_traits_model.pkl). "
-                    f"File path: {load_path}"
+                    "Error: This appears to be a behavioral traits model, "
+                    "not a risk prediction model. Make sure you're loading the correct model file "
+                    f"(risk_model.pkl, not behavioral_traits_model.pkl). File path: {load_path}"
                 )
             else:
                 raise KeyError(

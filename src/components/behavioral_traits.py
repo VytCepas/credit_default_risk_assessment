@@ -49,7 +49,8 @@ class BehavioralTraitsDisplay:
         st.markdown("---")
         st.title("🎭 Behavioral Traits Analysis")
         st.caption(
-            "Behavioral scores are normalized to 0-100 and complement the risk model rather than replacing it."
+            "Behavioral scores are normalized to 0-100 and complement the risk model "
+            "rather than replacing it."
         )
 
         job_stability = self._coerce_score(traits_results.get("job_stability", 0))
@@ -159,7 +160,8 @@ class BehavioralTraitsDisplay:
                 ">
                     <h4 style="color: {color}; margin: 0 0 0.5rem 0;">{icon} {trait_name}</h4>
                     <h2 style="color: {color}; margin: 0.5rem 0;">{score:.1f}/100</h2>
-                    <p style="color: {status_color}; font-weight: bold; margin: 0.5rem 0;">{status}</p>
+                    <p style="color: {status_color}; font-weight: bold; margin: 0.5rem 0;">
+                    {status}</p>
                     <p style="color: #666; font-size: 0.9rem; margin: 0;">{description}</p>
                 </div>
                 """,
@@ -243,17 +245,17 @@ class BehavioralTraitsDisplay:
             )
 
         st.markdown("---")
-        st.info("""
-        **About Behavioral Traits Analysis:**
-        
-        This analysis uses machine learning models trained on 300,000+ credit applications to estimate behavioral patterns that correlate with positive financial outcomes. Unlike traditional credit scoring, this approach evaluates:
-        
-        - **Job Stability**: Employment consistency and income reliability patterns
-        - **Payment Behavior**: Credit usage and payment history indicators  
-        - **Responsibility**: Demographic factors associated with financial reliability
-        
-        Higher scores indicate behavioral traits associated with lower default risk and better financial outcomes.
-        """)
+        st.info(
+            "**About Behavioral Traits Analysis:**\n\n"
+            "This analysis uses machine learning models trained on 300,000+ credit applications "
+            "to estimate behavioral patterns that correlate with positive financial outcomes. "
+            "Unlike traditional credit scoring, this approach evaluates:\n\n"
+            "- **Job Stability**: Employment consistency and income reliability patterns\n"
+            "- **Payment Behavior**: Credit usage and payment history indicators\n"
+            "- **Responsibility**: Demographic factors associated with financial reliability\n\n"
+            "Higher scores indicate behavioral traits associated with lower default risk "
+            "and better financial outcomes."
+        )
 
 
 def create_behavioral_traits_display():

@@ -40,7 +40,10 @@ def get_available_models():
         "risk_prediction_model": {
             "path": assets_dir / "risk_model.pkl",
             "display_name": "Risk Prediction Model",
-            "description": "Enhanced loan default risk assessment model with binary feature optimization and standardization",
+            "description": (
+                    "Enhanced loan default risk assessment model with binary feature "
+                    "optimization and standardization"
+                ),
             "icon": "🎯",
         },
         # Note: Other models below may not exist yet

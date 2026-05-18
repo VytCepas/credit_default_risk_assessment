@@ -210,7 +210,9 @@ def get_available_behavioral_models() -> Dict[str, Dict[str, Any]]:
         "behavioral_traits_model": {
             "path": assets_dir / "behavioral_traits_model.pkl",
             "display_name": "Behavioral Traits Model",
-            "description": "Analyzes job stability, payment behavior, and financial responsibility traits",
+            "description": (
+                    "Analyzes job stability, payment behavior, and financial responsibility traits"
+                ),
             "icon": "🎭",
             "type": "behavioral",
         },

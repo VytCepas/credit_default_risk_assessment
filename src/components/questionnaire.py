@@ -190,7 +190,10 @@ class QuestionnaireForm:
                 "value": 0,
                 "required": False,
                 "section": "Loan Information",
-                "help": "Optional: enter 0 to let the app estimate a monthly payment from the requested credit amount",
+                "help": (
+                    "Optional: enter 0 to let the app estimate a monthly payment "
+                    "from the requested credit amount"
+                ),
             },
         }
 
@@ -203,12 +206,13 @@ class QuestionnaireForm:
         """
         st.title("🏦 Home Credit Risk Assessment")
         st.markdown("---")
-        st.markdown("""
-        **Welcome to the Home Credit Risk Assessment Tool**
-        
-        This questionnaire takes approximately 5-10 minutes to complete and helps the model estimate your loan risk.
-        The loan annuity field is optional; leave it at 0 if you want the app to estimate a monthly payment for you.
-        """)
+        st.markdown(
+            "**Welcome to the Home Credit Risk Assessment Tool**\n\n"
+            "This questionnaire takes approximately 5-10 minutes to complete "
+            "and helps the model estimate your loan risk.\n"
+            "The loan annuity field is optional; leave it at 0 if you want "
+            "the app to estimate a monthly payment for you."
+        )
 
         if "form_data" not in st.session_state:
             st.session_state.form_data = {}
