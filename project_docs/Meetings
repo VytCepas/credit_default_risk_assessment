@@ -1,0 +1,41 @@
+
+1) Project kickoff - idea, data, structure
+
+May 5
+Around 2 h
+Teams, Discord
+
+Agreed on project scope: credit default risk assessment using Home Credit Kaggle dataset
+Defined repo structure: notebooks/, src/, models/, data/, project_docs/
+Chose core stack: Python 3.12, Streamlit, GBM-based models
+Set up GitHub Issues and split initial tasks between team members
+
+
+2) EDA review, feature engineering plan
+
+May 9
+Around 2h
+Discord
+
+Progress review – discussed what has been completed so far
+Reviewed initial EDA findings from notebooks
+Decided to engineer financial ratio features (debt-to-income, credit utilisation, income per family member)
+Planned aggregation of bureau.csv and previous_application.csv tables
+Agreed on GBM as the baseline model
+Agreed to add SHAP force plots and dependence plots for model explainability
+Issues review – went through open GitHub issues, checked statuses and blockers
+Aligned on next steps before final presentation
+Ticket creation – created new GitHub issues for upcoming tasks based on discussed priorities
+
+
+3) Model comparison, SHAP integration
+
+May 15
+Around 45 min
+Discord
+
+Progress review – discussed what has been completed so far
+Discussed training LightGBM and comparing it against GBM baseline using 5-fold CV
+Sprint review – evaluated sprint goals
+
+
