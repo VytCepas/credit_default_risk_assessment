@@ -588,7 +588,7 @@ Experiments E1, E2a, E2b executed locally on 2026-05-23 (CPU only). E4 (CTGAN) a
 | **E2a — Questionnaire + 5 ratios** | 12 numeric features, LightGBM defaults | **0.6846** | **+0.0574** | Zero-data-cost win |
 | **E1 — Unconstrained baseline** | 104 numeric features (incl. `EXT_SOURCE_*`), LightGBM | **0.7589** | **+0.1317** | Kaggle median territory |
 | **E2b — Unconstrained + ratios + `ext_2*3`** | 111 numeric features | **0.7658** | **+0.1386** | Approaches Aguiar (~0.791) |
-| **E3 — RandomizedSearchCV (50×5)** | Tuned LightGBM on E2a feature set | *cell ready — re-run on dedicated machine* | predicted +0.005 to +0.010 | CPU-bound (~10–15 min) |
+| **E3 — RandomizedSearchCV (20×3 fast variant)** | Tuned LightGBM on E2a feature set; 20 iterations × 3-fold stratified CV | **0.6877** (holdout); CV best 0.6797 | **+0.0605** | 3.8 h CPU. Best params: `n_estimators=500`, `learning_rate=0.05`, `num_leaves=15`, `subsample=0.6`, `colsample_bytree=0.8`, `min_child_samples=20`, `reg_alpha=1.0`, `reg_lambda=1.0`, `max_depth=-1` |
 | **E4 — CTGAN-balanced LightGBM** *(Laurynas, LZ-9)* | E2a features, CTGAN(epochs=50) replaces SMOTETomek | *predicted ~0.68–0.71* (run cell to measure) | predicted +0.05 to +0.08 | Tabular GAN oversampling. Cell in notebook; standalone run needs >15 min CPU |
 | **E5 — Stacking + Platt calibration** *(Vytautas, #48 + #49 + #52)* | GBM + LightGBM + XGBoost on E2a, LR meta, sigmoid calibration | *predicted ~0.69–0.71* AUC; Brier ↓ | predicted +0.06 to +0.08 | Cell in notebook (use `n_jobs=1` to avoid joblib nested-parallelism deadlock observed in this environment) |
 | Sprint 4 ceiling (with bureau aggregations) | E2b features + bureau aggregations from #47 | predicted ~0.79–0.81 | predicted +0.16 to +0.18 | Blocked on Kaggle credentials |
@@ -817,7 +817,7 @@ E9 Marimo     |          |          |          |          |    ░░░░░�
 | Kaggle leaderboard benchmark reference | §6 | ✅ |
 | Gap analysis — why we're at 0.6272 vs median 0.75 | §6.3 | ✅ |
 | Top-solution recipe digest for Sprint 4 | §6.4 | ✅ |
-| Model expansion experiments (E1 + E2a + E2b measured; E3 running) | §7 | ✅ E1: 0.7589, E2a: 0.6846, E2b: 0.7658 |
+| Model expansion experiments (E1, E2a, E2b, E3 measured; E4 + E5 cells in notebook) | §7 | ✅ E1: 0.7589, E2a: 0.6846, E2b: 0.7658, E3: 0.6877 |
 | Future objective — Epic 9 marimo migration | §8.2 | ✅ |
 
 ### 10.3 File appendix

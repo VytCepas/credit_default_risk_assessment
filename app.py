@@ -169,6 +169,7 @@ def show_benchmarks_page():
             ("E4 — CTGAN-balanced LightGBM (predicted)", 0.685, "Ours (predicted)"),
             ("E2b — Unconstrained + ratios + ext_2*3", 0.7658, "Ours (measured)"),
             ("E1 — Unconstrained baseline", 0.7589, "Ours (measured)"),
+            ("E3 — RandomizedSearchCV (tuned LightGBM)", 0.6877, "Ours (measured)"),
             ("E2a — Questionnaire + 5 ratios", 0.6846, "Ours (measured)"),
             ("Production GBM (15 features)", 0.6272, "Ours (production)"),
         ],
