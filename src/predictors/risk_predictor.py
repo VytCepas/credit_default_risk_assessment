@@ -15,7 +15,7 @@ def load_risk_predictor(model_path: str):
         if not model_file.exists():
             raise FileNotFoundError(f"Risk model file not found: {model_file}")
 
-        # Project root is now 2 levels up from src/models/
+        # Project root is two levels up from src/predictors/
         project_root = Path(__file__).parent.parent.parent
         data_dir = project_root / "data"
 

@@ -5,12 +5,12 @@ import logging
 from src.components.questionnaire import create_questionnaire_form
 from src.components.results import create_results_display
 from src.components.behavioral_traits import create_behavioral_traits_display
-from src.models.risk_predictor import (
+from src.predictors.risk_predictor import (
     load_risk_predictor,
     get_available_models,
     predict_with_explanations,
 )
-from src.models.behavioral_predictor import (
+from src.predictors.behavioral_predictor import (
     predict_behavioral_traits,
     get_available_behavioral_models,
 )
@@ -1122,9 +1122,8 @@ def main():
         <div class="error-box">
         <p>No machine learning models are available. Please follow these steps:</p>
         <ol>
-            <li>Navigate to the <code>streamlit_app/src/models/</code> directory</li>
-            <li>Run <code>python train_model.py</code> to train the models</li>
-            <li>Ensure model files are saved in the project root directory</li>
+            <li>Train the production model — see <code>models/risk_model.py</code></li>
+            <li>Save model artefacts under <code>src/assets/</code></li>
             <li>Refresh this page once training is complete</li>
         </ol>
         </div>

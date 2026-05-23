@@ -627,6 +627,57 @@ The expansion sections in the notebook are clearly labelled with markdown header
 
 The point of the defence is not "we beat Kaggle" — it's "we know exactly where we are on the leaderboard, why, and what closes the gap."
 
+### 7.4 Standard+ tier — Top-25 squeeze model (post-defence enhancement)
+
+After the E1–E5 experiments above, a separate study selected the top 25 self-reportable features from `application_train` by LightGBM gain importance (38 candidates → top 25). The full Stage-1 + Stage-2 pipeline (`scripts/select_top25_features.py` and `scripts/squeeze_top25_accuracy.py`) measured:
+
+| Stage | Feature set | **ROC-AUC** | Δ vs prior |
+|-------|-------------|-------------|------------|
+| Production GBM (15 fields) | 15 | 0.6272 | reference |
+| Top-25 only | 25 | 0.6854 | +0.058 |
+| **+ 6 derived ratios** | 31 | **0.7093** | **+0.024** (biggest step) |
+| **+ RandomizedSearchCV** | 31 | **0.7146 🏆** | +0.005 (BEST) |
+| + CTGAN balancing | 31 | 0.7119 | −0.003 |
+| + Stacking | 31 | 0.7142 | flat |
+| + Calibration | 31 | 0.7142 | flat |
+
+**Headline:** Top-25 + ratios + tuning reaches **ROC-AUC 0.7146** (`scripts/results/squeeze_summary.json`), **+0.0874 over production**, breaks above the application-only LR baseline (~0.70), within 0.04 of the Kaggle median (0.75). Best params: `n_estimators=700, learning_rate=0.02, num_leaves=31, min_child_samples=50, subsample=0.8, colsample_bytree=0.6, reg_alpha=0, reg_lambda=1.0`.
+
+**Production artefact:** `src/assets/top25_risk_model.pkl` (2.5 MB; model + OrdinalEncoder + feature list). Loaded by `models/top25_predictor.py::Top25Predictor` and served by the new "📋 Standard+ Application" Streamlit page.
+
+**The 22 user-typed questions** (auto-fill: hour_appr_process_start, weekday_appr_process_start):
+
+| Section | Fields | n |
+|---|---|---|
+| Personal | gender, age, family_status, num_children, num_family_members | 5 |
+| Employment | years_employed, organization_type, occupation_type, has_work_phone | 4 |
+| Loan | contract_type, credit_amount, loan_annuity, goods_price | 4 |
+| Financial | total_income | 1 |
+| Assets | owns_car, car_age, owns_realty | 3 |
+| Residence | years_at_address, years_since_id_change, *city_size* (covers 2 model fields), works_in_different_city | 4 |
+| Other | has_landline | 1 |
+
+`city_size` dropdown maps to both `region_population_relative` and `region_rating_client_w_city` via training-data medians (saves a question).
+
+### 7.5 Insights surfaces — ADR 0002 (PR #85)
+
+The Standard+ result page exposes 9 user-facing insights (P-01…P-09 from ADR 0002):
+
+| ID | Surface | Owner |
+|---|---|---|
+| P-01 | Counter-factual "what to improve" (mutable-feature perturbation) | VC (#75) |
+| P-02 | Approval probability ± confidence interval (bootstrap) | LZ (#76) |
+| P-03 | Cohort percentile (age × income buckets, precomputed) | LZ (#77) |
+| P-04 | Industry & region default-rate benchmark (precomputed lookup) | VC (#78) |
+| P-05 | Loan-affordability sandbox slider | VC (#79) |
+| P-06 | Recommended max loan via binary search | LZ (#80) |
+| P-07 | Time-to-improvement projection | LZ (#81) |
+| P-08 | Estimated approval-process time | VC (#82) |
+| P-09 | Risk decomposition by feature group (Plotly pie) | VC (#83) |
+| P-10 | Time-to-default (survival) — EPIC, gated on bureau data | VC + LZ (#84) |
+
+Lookup artefacts: `scripts/results/cohort_distributions.json` (20 cohorts), `scripts/results/industry_region_benchmarks.json` (58 industries, 3 region ratings, 8.07% population baseline). Tests: `tests/test_insights.py` (12 unit tests, all green).
+
 ---
 
 ## 8. Future Objectives & Roadmap Update
@@ -818,23 +869,34 @@ E9 Marimo     |          |          |          |          |    ░░░░░�
 | Kaggle leaderboard benchmark reference | §6 | ✅ |
 | Gap analysis — why we're at 0.6272 vs median 0.75 | §6.3 | ✅ |
 | Top-solution recipe digest for Sprint 4 | §6.4 | ✅ |
-| Model expansion experiments (E1 + E2a + E2b + E3 + E4 + E5 all measured) | §7 | ✅ E1: 0.7589, E2a: 0.6846, E2b: 0.7658, E3: 0.6877, E4: 0.6882, E5: 0.6848 |
-| Future objective — Epic 9 marimo migration | §8.2 | ✅ |
+| Model expansion E1–E5 (all measured) | §7.1 | ✅ E1: 0.7589, E2a: 0.6846, E2b: 0.7658, E3: 0.6877, E4: 0.6882, E5: 0.6848 |
+| **Top-25 squeeze model** — Standard+ tier production-ready | §7.4 | ✅ **0.7146** (+0.0874 over production) |
+| **ADR 0002 insights — 9 user-facing surfaces (P-01…P-09)** | §7.5 | ✅ shipped on the Standard+ result page |
+| ADR 0001 — tiered questionnaire strategy + 8 follow-up GitHub issues (#66-#73) | §8.3a, project_docs/adr/0001 | ✅ |
+| Future objective — Epic 9 marimo migration | §8.2 | ✅ partial implementation |
 
 ### 10.3 File appendix
 
-| File | Purpose |
+| Path | Purpose |
 |------|---------|
-| `project_docs/practical_3_report.md` | This report |
-| `project_docs/practical_3_brief.md` | Course brief |
-| `project_docs/practical_1_report.md`, `practical_2_report.md` | Earlier reports — style template |
+| `app.py` | Streamlit entry point |
+| `models/risk_model.py` | Legacy 15-field production GBM pipeline |
+| `models/top25_predictor.py` | Standard+ tier wrapper around the squeeze model |
+| `models/insights.py` | ADR 0002 prediction surfaces (P-01…P-09) |
+| `models/behavioral_traits_model.py` | Behavioural-traits classifier |
+| `src/predictors/risk_predictor.py`, `behavioral_predictor.py` | Streamlit cache wrappers |
+| `src/components/questionnaire.py`, `questionnaire_top25.py`, `results.py`, `behavioral_traits.py` | Streamlit UI components |
+| `src/assets/risk_model.pkl`, `top25_risk_model.pkl`, `behavioral_traits_model.pkl` | Trained artefacts |
+| `notebooks/risk_default_analysis.ipynb` | Authoritative analysis notebook (code collapsed by default) |
+| `notebooks/risk_default_analysis.py` | Marimo reactive port (Epic 9) |
+| `scripts/select_top25_features.py`, `squeeze_top25_accuracy.py`, `precompute_insights.py`, `run_e4_ctgan.py`, `run_e5_stacking.py` | Reproducer scripts |
+| `scripts/results/*.json` | Measurement artefacts (squeeze summary, top-25 feature ranking, cohort distributions, industry/region benchmarks, E3/E4/E5 results) |
+| `tests/` | 45 unit tests (preprocessing, predictor, top25, insights) |
 | `.github/workflows/ci.yml` | CI pipeline (§3.1) |
-| `tests/test_preprocessing.py`, `tests/test_predictor.py` | 28 tests (§3.3) |
-| `notebooks/risk_default_analysis.ipynb` | Model comparison + §7 expansion |
-| `models/risk_model.py` | Production GBM pipeline |
-| `src/components/`, `src/models/`, `src/assets/` | Streamlit application |
 | `data/application_train.parquet`, `application_test.parquet` | Kaggle Home Credit dataset (cached locally; see R-V3) |
 | `data/pictures/github_push_graph.png` | Defence screenshot (gitignored) |
+| `project_docs/adr/0001_tiered_questionnaire.md` | Tiered questionnaire ADR |
+| `docs/architecture.md` | Module layout and code-organisation guide |
 
 ### 10.4 Sign-off
 
