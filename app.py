@@ -288,10 +288,19 @@ def show_top25_page():
     """Standard+ tier (ADR 0001) — 25-field questionnaire + tuned squeeze model."""
     from src.components.questionnaire_top25 import render_top25_questionnaire
     from models.top25_predictor import Top25Predictor
+    from models import insights
 
     @st.cache_resource(show_spinner=False)
     def _load_top25():
         return Top25Predictor("src/assets/top25_risk_model.pkl")
+
+    @st.cache_resource(show_spinner=False)
+    def _load_cohort_distributions():
+        return insights.load_precomputed("scripts/results/cohort_distributions.json")
+
+    @st.cache_resource(show_spinner=False)
+    def _load_benchmarks():
+        return insights.load_precomputed("scripts/results/industry_region_benchmarks.json")
 
     try:
         predictor = _load_top25()
@@ -309,16 +318,37 @@ def show_top25_page():
 
     with st.spinner("Scoring…"):
         result = predictor.predict(form_data)
+        approval = insights.approval_with_confidence(predictor, form_data)
+        decomposition = insights.risk_decomposition(predictor, form_data)
+        cohort = insights.cohort_percentile(
+            {**form_data, "__risk_score": result["risk_score"]},
+            _load_cohort_distributions(),
+        )
+        benchmarks = insights.industry_region_benchmark(form_data, _load_benchmarks())
+        process_time = insights.approval_process_time(result["risk_category"])
+        recommended_max = insights.recommended_max_loan(predictor, form_data)
+        counter_factuals = insights.counter_factual_recommendations(predictor, form_data)
+        time_to_improve = (
+            insights.time_to_improvement(predictor, form_data)
+            if result["risk_category"] != "Low" else
+            {"already_at_target": True, "months_to_target": 0, "target_tier": "Low"}
+        )
 
+    # ---------------- Headline metrics ----------------
     st.markdown(
         '<div class="section-header">📊 Standard+ Risk Assessment Result</div>',
         unsafe_allow_html=True,
     )
 
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4 = st.columns(4)
     col1.metric("Risk score (0–1000)", result["risk_score"])
-    col2.metric("Default probability", f"{result['risk_probability']:.1%}")
+    col2.metric(
+        "Approval probability",
+        f"{approval['approval_probability']:.0%}",
+        delta=f"± {(approval['ci_upper']-approval['ci_lower'])/2:.1%}",
+    )
     col3.metric("Risk tier", result["risk_category"])
+    col4.metric("Decision time", process_time["expected_time"])
 
     tier_box = {
         "Low": "success-box",
@@ -328,15 +358,149 @@ def show_top25_page():
     st.markdown(
         f'<div class="{tier_box}"><strong>{result["risk_category"]} risk</strong> — '
         f'model {result["model_name"]} (holdout ROC-AUC '
-        f'{result["model_auc"]:.4f}).</div>',
+        f'{result["model_auc"]:.4f}). Confidence band: '
+        f'<strong>{approval["confidence_band"]}</strong> '
+        f'(CI {approval["ci_lower"]:.1%} – {approval["ci_upper"]:.1%}).</div>',
         unsafe_allow_html=True,
     )
 
+    # ---------------- Insights tabs ----------------
+    st.markdown("### 💡 Insights")
+    tab1, tab2, tab3, tab4, tab5 = st.tabs([
+        "Quick wins", "What if loan amount?", "Risk decomposition",
+        "How do I compare?", "Time to improve",
+    ])
+
+    # P-01 — Counter-factual
+    with tab1:
+        st.markdown("**Three realistic changes that would lower your risk score**")
+        recs = counter_factuals["recommendations"]
+        if not recs:
+            st.info(
+                "No clear single-change improvements found. Your profile is well-"
+                "balanced for the current loan parameters."
+            )
+        else:
+            for rec in recs:
+                st.markdown(
+                    f"- **{rec['feature']}**: change `{rec['current_value']}` → "
+                    f"`{rec['suggested_value']}` "
+                    f"→ score drops from {rec['current_score']} to "
+                    f"{rec['projected_score']} (**Δ {rec['delta']}**)"
+                )
+        st.caption(
+            "Counter-factuals come from one-step perturbations on mutable features "
+            "(no demographic or family fields)."
+        )
+
+    # P-05 — Loan affordability sandbox + P-06 recommended max
+    with tab2:
+        if recommended_max.get("amount") is not None:
+            st.success(
+                f"💰 Recommended max loan for **{recommended_max['projected_tier']}** "
+                f"tier: **€{int(recommended_max['amount']):,}** "
+                f"(projected score {recommended_max['projected_score']})."
+            )
+            st.caption(recommended_max.get("note", ""))
+        else:
+            st.warning(recommended_max.get("note", "No safe loan amount found."))
+
+        slider_default = int(form_data.get("credit_amount") or 500_000)
+        new_amount = st.slider(
+            "What if I borrowed…",
+            min_value=50_000,
+            max_value=max(2_000_000, slider_default * 2),
+            value=slider_default,
+            step=10_000,
+            key="t25_loan_what_if",
+        )
+        if new_amount != slider_default:
+            with st.spinner("Re-scoring…"):
+                modified = dict(form_data)
+                modified["credit_amount"] = float(new_amount)
+                modified["loan_annuity"] = (
+                    float(form_data.get("loan_annuity") or 25_000)
+                    * float(new_amount) / slider_default
+                )
+                what_if_result = predictor.predict(modified)
+            st.metric(
+                f"At €{new_amount:,}",
+                f"{what_if_result['risk_score']} / 1000",
+                delta=what_if_result["risk_score"] - result["risk_score"],
+                delta_color="inverse",
+            )
+            st.caption(
+                f"Projected tier: **{what_if_result['risk_category']}** "
+                f"({what_if_result['risk_probability']:.1%} default probability)"
+            )
+
+    # P-09 — Risk decomposition
+    with tab3:
+        groups = decomposition.get("groups", {})
+        if groups:
+            import plotly.express as px
+            fig = px.pie(
+                names=list(groups.keys()), values=list(groups.values()),
+                title="Where does your risk come from?",
+                hole=0.4,
+            )
+            fig.update_layout(height=400)
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.info(decomposition.get("note", "Risk decomposition unavailable."))
+        st.caption(decomposition.get("method", ""))
+
+    # P-03 + P-04 — Cohort comparison + industry/region
+    with tab4:
+        if cohort.get("percentile") is not None:
+            st.success(cohort["interpretation"])
+            st.caption(
+                f"Cohort: {cohort['cohort_label']} "
+                f"(n={cohort['n_in_cohort']:,} applicants)"
+            )
+        else:
+            st.info("Cohort distributions not yet precomputed.")
+
+        if benchmarks.get("industry_rate") is not None:
+            st.markdown("**Industry & region context**")
+            col_a, col_b, col_c = st.columns(3)
+            col_a.metric(
+                f"Your industry default rate", f"{benchmarks['industry_rate']:.1%}",
+                help=f"Industry: {benchmarks['industry_label']}",
+            )
+            col_b.metric(
+                "Your region default rate", f"{benchmarks['region_rate']:.1%}",
+                help=f"Region rating: {benchmarks['region_label']}",
+            )
+            col_c.metric(
+                "All-applicants baseline",
+                f"{benchmarks.get('population_rate', 0.081):.1%}",
+            )
+            st.caption(
+                "Context only — not a personal judgment. Industry / region rates "
+                "are observed defaults in the training data."
+            )
+
+    # P-07 — Time to improvement
+    with tab5:
+        if time_to_improve.get("already_at_target"):
+            st.success("You're already at Low-risk tier 🎉")
+        elif time_to_improve.get("months_to_target") is not None:
+            m = time_to_improve["months_to_target"]
+            st.info(
+                f"At your current trajectory, you'd reach "
+                f"**{time_to_improve['target_tier']}** tier in approximately "
+                f"**{m} month{'s' if m != 1 else ''}** "
+                f"(projected score {time_to_improve['projected_score']})."
+            )
+        else:
+            st.warning(time_to_improve.get("note", "Target tier not reachable."))
+        st.caption(time_to_improve.get("caveat", ""))
+
     st.caption(
-        "This is the Standard+ (Tier 2) result from ADR 0001 — 23 user-typed "
-        "answers + 2 auto-filled timestamp fields + 6 server-side ratios. "
-        "Production model (15-field tier) is still available via the Questionnaire "
-        "page."
+        "🛈 Standard+ tier (ADR 0001 + 0002). 23 user-typed answers + 2 auto-filled "
+        "+ 6 server-side ratios. Production model is the 15-field tier via "
+        "the Questionnaire page."
     )
 
     if st.button("⬅️ Back to other pages", use_container_width=True):
