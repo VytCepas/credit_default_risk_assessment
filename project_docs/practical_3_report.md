@@ -589,8 +589,8 @@ Experiments E1, E2a, E2b executed locally on 2026-05-23 (CPU only). E4 (CTGAN) a
 | **E1 — Unconstrained baseline** | 104 numeric features (incl. `EXT_SOURCE_*`), LightGBM | **0.7589** | **+0.1317** | Kaggle median territory |
 | **E2b — Unconstrained + ratios + `ext_2*3`** | 111 numeric features | **0.7658** | **+0.1386** | Approaches Aguiar (~0.791) |
 | **E3 — RandomizedSearchCV (20×3 fast variant)** | Tuned LightGBM on E2a feature set; 20 iterations × 3-fold stratified CV | **0.6877** (holdout); CV best 0.6797 | **+0.0605** | 3.8 h CPU. Best params: `n_estimators=500`, `learning_rate=0.05`, `num_leaves=15`, `subsample=0.6`, `colsample_bytree=0.8`, `min_child_samples=20`, `reg_alpha=1.0`, `reg_lambda=1.0`, `max_depth=-1` |
-| **E4 — CTGAN-balanced LightGBM** *(Laurynas, LZ-9)* | E2a features, CTGAN(epochs=50) replaces SMOTETomek | *predicted ~0.68–0.71* (run cell to measure) | predicted +0.05 to +0.08 | Tabular GAN oversampling. Cell in notebook; standalone run needs >15 min CPU |
-| **E5 — Stacking + Platt calibration** *(Vytautas, #48 + #49 + #52)* | GBM + LightGBM + XGBoost on E2a, LR meta, sigmoid calibration | *predicted ~0.69–0.71* AUC; Brier ↓ | predicted +0.06 to +0.08 | Cell in notebook (use `n_jobs=1` to avoid joblib nested-parallelism deadlock observed in this environment) |
+| **E4 — CTGAN-balanced LightGBM** *(Laurynas, LZ-9)* | E2a features, CTGAN(epochs=20) on 2000 minority samples, 30K synthetic added | **0.6882** | **+0.0610** | Tabular GAN oversampling. Fast config: 8s CTGAN train + 0.2s sample. Production-grade epochs=50 / full-balance run pending dedicated machine. |
+| **E5 — Stacking + Platt calibration** *(Vytautas, #48 + #49 + #52)* | GBM(50) + LightGBM(100) + XGBoost(100) on E2a, LR meta, sigmoid calibration via `FrozenEstimator` | **0.6848** stack, **0.6848** calibrated (Brier 0.0718 → 0.0719) | **+0.0576** | Stacking did NOT beat tuned single model (E3 = 0.6877). Calibration delivered no Brier lift — meta-LR already well-calibrated. Suggests diversity gain consumed by lower-capacity base models. |
 | Sprint 4 ceiling (with bureau aggregations) | E2b features + bureau aggregations from #47 | predicted ~0.79–0.81 | predicted +0.16 to +0.18 | Blocked on Kaggle credentials |
 | Kaggle leaderboard ceiling | 1st place — full stack + DAE | 0.806 | +0.18 | Reference |
 
@@ -599,6 +599,7 @@ Experiments E1, E2a, E2b executed locally on 2026-05-23 (CPU only). E4 (CTGAN) a
 - **+0.057 AUC from zero-data-cost ratio features** (E2a). Five derivations from columns the production app *already collects*. This is a Sprint-4 deployment opportunity, not a feature constraint.
 - **+0.132 AUC from removing the questionnaire constraint** (E1 vs production). Confirms the gap-analysis hypothesis from §6.3 — the *product requirement*, not the algorithm, is the binding cap on production ROC-AUC.
 - **0.7658 AUC on the same data as the original Kaggle competition (E2b)**, approaching public-kernel territory (~0.791) without any supplementary tables. Bureau aggregations close the rest of the gap.
+- **Within the questionnaire-constrained tier (E2a feature set), every technique we tried lands at ~0.685 ± 0.005**: defaults 0.6846, CTGAN 0.6882, RandomizedSearchCV 0.6877, Stacking+calibration 0.6848. Marginal-return ceiling within this constraint — confirms the next AUC lever must come from new features (bureau aggregations or tier expansion), not better modelling on the same 12 features.
 
 ### 7.2 Reproduction runbook
 
@@ -817,7 +818,7 @@ E9 Marimo     |          |          |          |          |    ░░░░░�
 | Kaggle leaderboard benchmark reference | §6 | ✅ |
 | Gap analysis — why we're at 0.6272 vs median 0.75 | §6.3 | ✅ |
 | Top-solution recipe digest for Sprint 4 | §6.4 | ✅ |
-| Model expansion experiments (E1, E2a, E2b, E3 measured; E4 + E5 cells in notebook) | §7 | ✅ E1: 0.7589, E2a: 0.6846, E2b: 0.7658, E3: 0.6877 |
+| Model expansion experiments (E1 + E2a + E2b + E3 + E4 + E5 all measured) | §7 | ✅ E1: 0.7589, E2a: 0.6846, E2b: 0.7658, E3: 0.6877, E4: 0.6882, E5: 0.6848 |
 | Future objective — Epic 9 marimo migration | §8.2 | ✅ |
 
 ### 10.3 File appendix

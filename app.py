@@ -165,8 +165,8 @@ def show_benchmarks_page():
             ("Aguiar public kernel", 0.791, "Kaggle"),
             ("Median submission", 0.75, "Kaggle"),
             ("Application-only LR baseline", 0.70, "Kaggle"),
-            ("E5 — Stacking + calibration (predicted)", 0.69, "Ours (predicted)"),
-            ("E4 — CTGAN-balanced LightGBM (predicted)", 0.685, "Ours (predicted)"),
+            ("E5 — Stacking (GBM+LGBM+XGB) + Platt calibration", 0.6848, "Ours (measured)"),
+            ("E4 — CTGAN-balanced LightGBM", 0.6882, "Ours (measured)"),
             ("E2b — Unconstrained + ratios + ext_2*3", 0.7658, "Ours (measured)"),
             ("E1 — Unconstrained baseline", 0.7589, "Ours (measured)"),
             ("E3 — RandomizedSearchCV (tuned LightGBM)", 0.6877, "Ours (measured)"),
@@ -187,7 +187,6 @@ def show_benchmarks_page():
             "Kaggle": "#bbbbbb",
             "Ours (production)": "#1f77b4",
             "Ours (measured)": "#2ca02c",
-            "Ours (predicted)": "#ff7f0e",
         },
         title="Practical 3 Model Expansion vs Kaggle Leaderboard",
     )
@@ -195,11 +194,10 @@ def show_benchmarks_page():
     st.plotly_chart(fig, use_container_width=True)
 
     st.caption(
-        "ROC-AUC values for our experiments are measured on a stratified 20 % holdout of "
-        "`application_train.parquet` (`random_state=0`). E1, E2a, E2b are **measured**; "
-        "E4 (CTGAN) and E5 (Stacking) are **predicted** values from the published "
-        "literature — re-run the corresponding cells in `notebooks/risk_default_analysis.ipynb` "
-        "or the marimo port `notebooks/risk_default_analysis.py` for fresh measured values."
+        "All AUC values for our experiments are measured on a stratified 20 % holdout of "
+        "`application_train.parquet` (`random_state=0`). Reproduce via the corresponding "
+        "cells in `notebooks/risk_default_analysis.ipynb` or the marimo port "
+        "`notebooks/risk_default_analysis.py`, or run the standalone scripts in `scripts/`."
     )
 
     st.markdown("---")

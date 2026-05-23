@@ -368,6 +368,8 @@ def _(
     from sklearn.ensemble import GradientBoostingClassifier, StackingClassifier
     from sklearn.linear_model import LogisticRegression
     from sklearn.calibration import CalibratedClassifierCV
+    # sklearn ≥ 1.6 deprecated cv="prefit"; FrozenEstimator replaces it.
+    from sklearn.frozen import FrozenEstimator
     from sklearn.metrics import brier_score_loss
 
     base_estimators = [
@@ -412,8 +414,11 @@ def _(
     stack_proba = stack.predict_proba(X_te2)[:, 1]
     e5_auc = round(roc_auc_score(y_te2, stack_proba), 4)
 
-    # Calibration via Platt scaling (sigmoid) on the trained stack
-    calibrator = CalibratedClassifierCV(stack, method="sigmoid", cv="prefit")
+    # Calibration via Platt scaling (sigmoid) on the trained stack.
+    # FrozenEstimator prevents CalibratedClassifierCV from retraining the stack.
+    calibrator = CalibratedClassifierCV(
+        FrozenEstimator(stack), method="sigmoid", cv=5,
+    )
     calibrator.fit(X_tr2, y_tr2)
     cal_proba = calibrator.predict_proba(X_te2)[:, 1]
     e5_brier = round(brier_score_loss(y_te2, cal_proba), 4)

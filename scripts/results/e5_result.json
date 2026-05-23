@@ -1,0 +1,15 @@
+{
+  "experiment": "E5 Stacking + Platt calibration (fast config)",
+  "base_models": [
+    "gbm(50)",
+    "lgbm(100)",
+    "xgb(100)"
+  ],
+  "features": 12,
+  "stack_train_time_s": 55.3,
+  "stack_roc_auc": 0.6848,
+  "brier_uncalibrated": 0.0718,
+  "calibrated_roc_auc": 0.6848,
+  "brier_calibrated": 0.0719,
+  "brier_improvement": -0.0001
+}
