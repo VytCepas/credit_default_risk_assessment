@@ -110,14 +110,14 @@ print(f"S1 AUC: {s1_auc}  (train time: {s1_time}s)")
 
 # ---------------------------------------------------------------------------
 # S2 — RandomizedSearchCV on the extended feature set
+# Reduced budget (15 iter × 3-fold) — fast variant; cells in notebook use 50×5
 # ---------------------------------------------------------------------------
-print("\n=== S2: + RandomizedSearchCV (30 iter × 3-fold) ===")
+print("\n=== S2: + RandomizedSearchCV (15 iter × 3-fold, fast variant) ===")
 param_dist = {
-    "n_estimators":      [300, 500, 700, 1000],
-    "learning_rate":     [0.01, 0.02, 0.05, 0.1],
-    "num_leaves":        [15, 31, 63, 127],
-    "max_depth":         [-1, 4, 6, 8],
-    "min_child_samples": [10, 20, 50, 100],
+    "n_estimators":      [300, 500, 700],
+    "learning_rate":     [0.02, 0.05, 0.1],
+    "num_leaves":        [31, 63],
+    "min_child_samples": [20, 50],
     "subsample":         [0.6, 0.8, 1.0],
     "colsample_bytree":  [0.6, 0.8, 1.0],
     "reg_alpha":         [0, 0.1, 1.0],
@@ -127,7 +127,7 @@ skf = StratifiedKFold(n_splits=3, shuffle=True, random_state=RANDOM_STATE)
 search = RandomizedSearchCV(
     LGBMClassifier(random_state=RANDOM_STATE, verbose=-1, n_jobs=1),
     param_distributions=param_dist,
-    n_iter=30, cv=skf, scoring="roc_auc",
+    n_iter=15, cv=skf, scoring="roc_auc",
     random_state=RANDOM_STATE, n_jobs=-1, verbose=0,
 )
 t0 = time.perf_counter()

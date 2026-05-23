@@ -284,6 +284,66 @@ def show_benchmarks_page():
         st.rerun()
 
 
+def show_top25_page():
+    """Standard+ tier (ADR 0001) — 25-field questionnaire + tuned squeeze model."""
+    from src.components.questionnaire_top25 import render_top25_questionnaire
+    from models.top25_predictor import Top25Predictor
+
+    @st.cache_resource(show_spinner=False)
+    def _load_top25():
+        return Top25Predictor("src/assets/top25_risk_model.pkl")
+
+    try:
+        predictor = _load_top25()
+    except FileNotFoundError as exc:
+        st.error(f"Top-25 model bundle missing: {exc}")
+        st.info(
+            "Run `.venv/bin/python scripts/squeeze_top25_accuracy.py` to produce "
+            "`src/assets/top25_risk_model.pkl`."
+        )
+        return
+
+    form_data = render_top25_questionnaire()
+    if form_data is None:
+        return
+
+    with st.spinner("Scoring…"):
+        result = predictor.predict(form_data)
+
+    st.markdown(
+        '<div class="section-header">📊 Standard+ Risk Assessment Result</div>',
+        unsafe_allow_html=True,
+    )
+
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Risk score (0–1000)", result["risk_score"])
+    col2.metric("Default probability", f"{result['risk_probability']:.1%}")
+    col3.metric("Risk tier", result["risk_category"])
+
+    tier_box = {
+        "Low": "success-box",
+        "Medium": "warning-box",
+        "High": "error-box",
+    }[result["risk_category"]]
+    st.markdown(
+        f'<div class="{tier_box}"><strong>{result["risk_category"]} risk</strong> — '
+        f'model {result["model_name"]} (holdout ROC-AUC '
+        f'{result["model_auc"]:.4f}).</div>',
+        unsafe_allow_html=True,
+    )
+
+    st.caption(
+        "This is the Standard+ (Tier 2) result from ADR 0001 — 23 user-typed "
+        "answers + 2 auto-filled timestamp fields + 6 server-side ratios. "
+        "Production model (15-field tier) is still available via the Questionnaire "
+        "page."
+    )
+
+    if st.button("⬅️ Back to other pages", use_container_width=True):
+        st.session_state.current_page = "questionnaire"
+        st.rerun()
+
+
 def show_future_features_page():
     """Display planned features and enhancements"""
     st.markdown(
@@ -489,6 +549,15 @@ def create_navigation_sidebar():
                         st.rerun()
 
         st.markdown("---")
+        st.markdown("**📋 Standard+ tier (ADR 0001):**")
+        if st.button(
+            "📋 Standard+ Application (25 fields, ~5 min)",
+            use_container_width=True,
+            help="Improved-accuracy questionnaire — ROC-AUC 0.7146 vs 0.6272 production",
+        ):
+            st.session_state.current_page = "top25"
+            st.rerun()
+
         st.markdown("**🔬 Research:**")
         if st.button("🔬 Research & Benchmarks", use_container_width=True):
             st.session_state.current_page = "benchmarks"
@@ -913,6 +982,8 @@ def main():
         show_future_features_page()
     elif current_page == "benchmarks":
         show_benchmarks_page()
+    elif current_page == "top25":
+        show_top25_page()
     elif current_page in AVAILABLE_MODELS:
         show_model_results_page(current_page)
     elif current_page in AVAILABLE_BEHAVIORAL_MODELS:
