@@ -22,8 +22,11 @@ credit_default_risk_assessment/
 │   └── predictors/            ← Streamlit-side cached loaders that wrap models/
 │       └── behavioral_predictor.py
 ├── notebooks/
-│   ├── risk_default_analysis.ipynb    ← Jupyter notebook (authoritative)
-│   └── risk_default_analysis.py       — Marimo reactive port (Epic 9)
+│   └── risk_default_analysis.ipynb    ← Jupyter notebook (authoritative)
+├── marimo/                            ← Marimo reactive notebooks (Epic 9)
+│   ├── README.md
+│   ├── risk_default_analysis.py       — Port of the Jupyter notebook
+│   └── top25_squeeze.py               — Reactive playground for the production model
 ├── scripts/                   ← One-shot ETL / experiment / precompute scripts
 │   ├── select_top25_features.py
 │   ├── squeeze_top25_accuracy.py

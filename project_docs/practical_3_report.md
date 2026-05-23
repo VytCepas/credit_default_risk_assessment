@@ -698,7 +698,7 @@ Lookup artefacts: `scripts/results/cohort_distributions.json` (20 cohorts), `scr
 
 ### 8.2 Epic 9 — Notebook Migration to Marimo (NEW — partial implementation shipped)
 
-> **Scope update (2026-05-23):** original plan was documentation-only. During Practical 3 expansion, a working marimo port was created at `notebooks/risk_default_analysis.py` containing all six experiments (E1–E5). The port is validated by `marimo convert` and runs end-to-end. Full migration (remove the `.ipynb`, switch CI to `marimo check`, update README) remains Sprint 5 work — see LZ-10 in §8.3.
+> **Scope update (2026-05-23):** marimo notebooks now live in their own top-level `marimo/` folder (mirrors `notebooks/`). Two notebooks present: `risk_default_analysis.py` (Jupyter port — all six E1–E5 experiments) and `top25_squeeze.py` (reactive playground for the production Standard+ model with what-if sliders, feature importance chart, and live insights). Both validate cleanly via `marimo convert`. Full migration (remove the `.ipynb`, switch CI to `marimo check`, decommission the `notebooks/` directory) remains Sprint 5 work — see LZ-10 in §8.3.
 
 **Rationale (three reasons we are adding it):**
 
@@ -711,7 +711,7 @@ Lookup artefacts: `scripts/results/cohort_distributions.json` (20 cohorts), `scr
 | Story | Description | Estimate | Status |
 |-------|-------------|----------|--------|
 | E9-S1 | Add `marimo` to `requirements.txt`; verify install on Python 3.12 | 1 SP | ✅ Done (Practical 3) |
-| E9-S2 | Port `risk_default_analysis.ipynb` → `notebooks/risk_default_analysis.py` (marimo format) | 3 SP | ✅ Done (Practical 3) |
+| E9-S2 | Port `risk_default_analysis.ipynb` → `marimo/risk_default_analysis.py` (marimo format) | 3 SP | ✅ Done (Practical 3) |
 | E9-S3 | Verify reactive execution: changing a constant updates all downstream cells | 1 SP | 🗓 Sprint 5 (LZ-10) |
 | E9-S4 | Add `marimo check` step to CI workflow | 1 SP | 🗓 Sprint 5 |
 | E9-S5 | Document marimo workflow in README (`marimo edit` vs `marimo run`) | 1 SP | 🗓 Sprint 5 |
@@ -887,7 +887,9 @@ E9 Marimo     |          |          |          |          |    ░░░░░�
 | `src/components/questionnaire_top25.py`, `results.py`, `behavioral_traits.py` | Streamlit UI components |
 | `src/assets/top25_risk_model.pkl`, `behavioral_traits_model.pkl` | Trained artefacts |
 | `notebooks/risk_default_analysis.ipynb` | Authoritative analysis notebook (code collapsed by default) |
-| `notebooks/risk_default_analysis.py` | Marimo reactive port (Epic 9) |
+| `marimo/risk_default_analysis.py` | Marimo reactive port (Epic 9) |
+| `marimo/top25_squeeze.py` | Marimo playground for the production Standard+ model (sliders + live insights) |
+| `marimo/README.md` | Marimo folder guide |
 | `scripts/select_top25_features.py`, `squeeze_top25_accuracy.py`, `precompute_insights.py`, `run_e4_ctgan.py`, `run_e5_stacking.py` | Reproducer scripts |
 | `scripts/results/*.json` | Measurement artefacts (squeeze summary, top-25 feature ranking, cohort distributions, industry/region benchmarks, E3/E4/E5 results) |
 | `tests/test_top25_predictor.py`, `tests/test_insights.py` | 17 unit tests (5 top25 + 12 insights) |
