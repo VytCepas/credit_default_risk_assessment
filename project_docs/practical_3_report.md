@@ -875,28 +875,33 @@ E9 Marimo     |          |          |          |          |    ░░░░░�
 | ADR 0001 — tiered questionnaire strategy + 8 follow-up GitHub issues (#66-#73) | §8.3a, project_docs/adr/0001 | ✅ |
 | Future objective — Epic 9 marimo migration | §8.2 | ✅ partial implementation |
 
-### 10.3 File appendix
+### 10.3 File appendix (post-UX-rework — legacy 15-field paths removed)
 
 | Path | Purpose |
 |------|---------|
-| `app.py` | Streamlit entry point |
-| `models/risk_model.py` | Legacy 15-field production GBM pipeline |
+| `app.py` | Streamlit entry point — single Standard+ flow (hero → 25-field form → result with 6 insight tabs) |
 | `models/top25_predictor.py` | Standard+ tier wrapper around the squeeze model |
 | `models/insights.py` | ADR 0002 prediction surfaces (P-01…P-09) |
 | `models/behavioral_traits_model.py` | Behavioural-traits classifier |
-| `src/predictors/risk_predictor.py`, `behavioral_predictor.py` | Streamlit cache wrappers |
-| `src/components/questionnaire.py`, `questionnaire_top25.py`, `results.py`, `behavioral_traits.py` | Streamlit UI components |
-| `src/assets/risk_model.pkl`, `top25_risk_model.pkl`, `behavioral_traits_model.pkl` | Trained artefacts |
+| `src/predictors/behavioral_predictor.py` | Streamlit cache wrapper for behavioural-traits |
+| `src/components/questionnaire_top25.py`, `results.py`, `behavioral_traits.py` | Streamlit UI components |
+| `src/assets/top25_risk_model.pkl`, `behavioral_traits_model.pkl` | Trained artefacts |
 | `notebooks/risk_default_analysis.ipynb` | Authoritative analysis notebook (code collapsed by default) |
 | `notebooks/risk_default_analysis.py` | Marimo reactive port (Epic 9) |
 | `scripts/select_top25_features.py`, `squeeze_top25_accuracy.py`, `precompute_insights.py`, `run_e4_ctgan.py`, `run_e5_stacking.py` | Reproducer scripts |
 | `scripts/results/*.json` | Measurement artefacts (squeeze summary, top-25 feature ranking, cohort distributions, industry/region benchmarks, E3/E4/E5 results) |
-| `tests/` | 45 unit tests (preprocessing, predictor, top25, insights) |
+| `tests/test_top25_predictor.py`, `tests/test_insights.py` | 17 unit tests (5 top25 + 12 insights) |
 | `.github/workflows/ci.yml` | CI pipeline (§3.1) |
 | `data/application_train.parquet`, `application_test.parquet` | Kaggle Home Credit dataset (cached locally; see R-V3) |
 | `data/pictures/github_push_graph.png` | Defence screenshot (gitignored) |
 | `project_docs/adr/0001_tiered_questionnaire.md` | Tiered questionnaire ADR |
 | `docs/architecture.md` | Module layout and code-organisation guide |
+
+> **Deletions:** `models/risk_model.py`, `src/components/questionnaire.py`,
+> `src/predictors/risk_predictor.py`, `src/assets/risk_model.pkl`,
+> `tests/test_predictor.py`, `tests/test_preprocessing.py`. All artefacts
+> from the legacy 15-field flow were removed; the Standard+ tier is now the
+> only flow the Streamlit app exposes.
 
 ### 10.4 Sign-off
 
