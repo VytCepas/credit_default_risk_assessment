@@ -8,25 +8,25 @@ This document explains where each piece of code lives and why. If you're new to 
 
 ```
 credit_default_risk_assessment/
-├── app.py                     ← Streamlit entry point
+├── app.py                     ← Streamlit entry point — single Standard+ flow
 ├── models/                    ← ML model classes & training pipelines
-│   ├── risk_model.py             — Legacy 15-field GBM pipeline (production .pkl)
 │   ├── top25_predictor.py        — 25-field Standard+ tier inference wrapper
 │   ├── insights.py               — ADR 0002 prediction surfaces (P-01…P-09)
 │   └── behavioral_traits_model.py — Behavioural-traits classifier training
 ├── src/
 │   ├── assets/                ← Trained artefacts (.pkl), pictures
 │   ├── components/            ← Streamlit UI components (forms, results panes)
-│   │   ├── questionnaire.py        — Legacy 15-field form
 │   │   ├── questionnaire_top25.py  — 25-field Standard+ form
-│   │   ├── results.py              — Result display widgets
-│   │   └── behavioral_traits.py
+│   │   ├── results.py              — Result display widgets (kept for reuse)
+│   │   └── behavioral_traits.py    — Behavioural-traits result component
 │   └── predictors/            ← Streamlit-side cached loaders that wrap models/
-│       ├── risk_predictor.py
 │       └── behavioral_predictor.py
 ├── notebooks/
-│   ├── risk_default_analysis.ipynb    ← Jupyter notebook (authoritative)
-│   └── risk_default_analysis.py       — Marimo reactive port (Epic 9)
+│   └── risk_default_analysis.ipynb    ← Jupyter notebook (authoritative)
+├── marimo/                            ← Marimo reactive notebooks (Epic 9)
+│   ├── README.md
+│   ├── risk_default_analysis.py       — Port of the Jupyter notebook
+│   └── top25_squeeze.py               — Reactive playground for the production model
 ├── scripts/                   ← One-shot ETL / experiment / precompute scripts
 │   ├── select_top25_features.py
 │   ├── squeeze_top25_accuracy.py
@@ -34,10 +34,17 @@ credit_default_risk_assessment/
 │   ├── run_e4_ctgan.py
 │   ├── run_e5_stacking.py
 │   └── results/               ← JSON artefacts produced by the scripts above
-├── tests/                     ← pytest suites (45 tests on main)
+├── tests/                     ← pytest suites
+│   ├── test_top25_predictor.py
+│   └── test_insights.py
 ├── data/                      ← Cached Kaggle parquets (+ pictures, gitignored)
 └── project_docs/              ← Reports, briefs, ADRs (markdown)
 ```
+
+> **Note:** the legacy 15-field flow (`risk_model.py`, `questionnaire.py`,
+> `risk_predictor.py`, the legacy tests, and the `risk_model.pkl` artefact)
+> was removed in PR `feat/streamlit-ux-rework`. The Standard+ tier is now
+> the only flow the app exposes.
 
 ## The `models/` vs `src/predictors/` split
 
@@ -59,8 +66,7 @@ imports from `src/`. Keeps the ML core deployable independently of Streamlit.
 
 | File | Trained by | Used by |
 |------|------------|---------|
-| `risk_model.pkl` | `models/risk_model.py::RiskModel.train()` | Legacy 15-field flow (production) |
-| `top25_risk_model.pkl` | `scripts/squeeze_top25_accuracy.py` | New 25-field Standard+ flow |
+| `top25_risk_model.pkl` | `scripts/squeeze_top25_accuracy.py` | 25-field Standard+ flow (production) |
 | `behavioral_traits_model.pkl` | `models/behavioral_traits_model.py` | Behavioural-traits tab |
 
 Each `.pkl` is a self-contained bundle (model + encoder + feature list when
