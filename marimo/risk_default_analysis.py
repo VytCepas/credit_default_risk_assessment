@@ -1,20 +1,17 @@
 """Marimo reactive notebook — Risk default analysis.
 
-Port of `risk_default_analysis.ipynb` to marimo format. This is Epic 9 / LZ-10
-from `project_docs/practical_3_report.md` §8.2. Owner: Laurynas Žalaga.
+Reactive port of `notebooks/risk_default_analysis.ipynb`. Same dataset, same
+split, plus the Practical 3 model-expansion experiments (E1, E2a, E4, E5) and
+a per-stage view of the Top-25 squeeze summary.
 
-Why marimo:
-- Reactive execution eliminates the "did you run cells in order" class of bugs.
-- `.py` source is git-diffable and PR-reviewable (no JSON merge conflicts).
-- LLMs (and code reviewers) read/write `.py` more reliably than `.ipynb`.
-
-Run with: `marimo edit notebooks/risk_default_analysis.py`
-Read-only:  `marimo run  notebooks/risk_default_analysis.py`
+Run with:
+    .venv/bin/marimo edit marimo/risk_default_analysis.py
+Read-only:
+    .venv/bin/marimo run  marimo/risk_default_analysis.py
 """
-
 import marimo
 
-__generated_with = "0.9.0"
+__generated_with = "0.23.8"
 app = marimo.App(width="medium")
 
 
@@ -30,8 +27,7 @@ def _(mo):
         """
         # Home Credit Default Risk — Marimo Edition
 
-        Reactive port of `risk_default_analysis.ipynb`. Same dataset, same baseline,
-        plus the Practical 3 model-expansion experiments (E1–E5).
+        Reactive port of `notebooks/risk_default_analysis.ipynb`.
 
         **Kaggle leaderboard reference** (Home Credit Default Risk, 7,198 teams, 2018):
 
@@ -43,7 +39,8 @@ def _(mo):
         | Aguiar public kernel | ~0.791 |
         | Median submission | ~0.75 |
         | Application-only LR baseline | ~0.70 |
-        | **Our production (15 questionnaire features)** | **~0.6272** |
+        | **Our production Top-25 (Standard+)** | **0.7146** |
+        | Production 15-field GBM (Practical 2) | 0.6272 |
         """
     )
     return
@@ -51,22 +48,30 @@ def _(mo):
 
 @app.cell
 def _():
+    import sys
+    import time
     from pathlib import Path
+
     import numpy as np
     import pandas as pd
     from sklearn.metrics import roc_auc_score
-    from sklearn.model_selection import train_test_split, StratifiedKFold
+    from sklearn.model_selection import train_test_split
 
-    DATA_DIRECTORY = Path("../data")
+    PROJECT_ROOT = Path.cwd().parent if Path.cwd().name == "marimo" else Path.cwd()
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+    DATA_DIRECTORY = PROJECT_ROOT / "data"
+    RESULTS_DIRECTORY = PROJECT_ROOT / "scripts" / "results"
     RANDOM_STATE = 0
     return (
         DATA_DIRECTORY,
-        Path,
+        PROJECT_ROOT,
+        RESULTS_DIRECTORY,
         RANDOM_STATE,
-        StratifiedKFold,
         np,
         pd,
         roc_auc_score,
+        time,
         train_test_split,
     )
 
@@ -90,60 +95,60 @@ def _(DATA_DIRECTORY, mo, pd):
 
 @app.cell
 def _(application_df, np):
-    import time
-
     eps = 1e-9
-    app = application_df.copy()
-    app["days_employed"] = app["days_employed"].replace(365243, np.nan)
+    app_eng = application_df.copy()
+    app_eng["days_employed"] = app_eng["days_employed"].replace(365243, np.nan)
 
     # Engineered ratio features (Kaggle top-solution playbook)
-    app["dti"] = app["amt_annuity"] / (app["amt_income_total"] + eps)
-    app["credit_to_income"] = app["amt_credit"] / (app["amt_income_total"] + eps)
-    app["annuity_to_credit"] = app["amt_annuity"] / (app["amt_credit"] + eps)
-    app["years_employed_ratio"] = (-app["days_employed"]) / (
-        (-app["days_birth"]) + eps
+    app_eng["dti"] = app_eng["amt_annuity"] / (app_eng["amt_income_total"] + eps)
+    app_eng["credit_to_income"] = app_eng["amt_credit"] / (app_eng["amt_income_total"] + eps)
+    app_eng["annuity_to_credit"] = app_eng["amt_annuity"] / (app_eng["amt_credit"] + eps)
+    app_eng["years_employed_ratio"] = (-app_eng["days_employed"]) / (
+        (-app_eng["days_birth"]) + eps
     )
-    app["income_per_family_member"] = app["amt_income_total"] / (
-        app["cnt_fam_members"] + eps
+    app_eng["income_per_family_member"] = app_eng["amt_income_total"] / (
+        app_eng["cnt_fam_members"] + eps
     )
     # EXT_SOURCE interaction (unconstrained set only)
-    app["ext_2_x_3"] = app["ext_source_2"] * app["ext_source_3"]
-    app["ext_source_mean"] = app[
+    app_eng["ext_2_x_3"] = app_eng["ext_source_2"] * app_eng["ext_source_3"]
+    app_eng["ext_source_mean"] = app_eng[
         ["ext_source_1", "ext_source_2", "ext_source_3"]
     ].mean(axis=1)
 
-    return app, eps, time
+    return (app_eng,)
 
 
 @app.cell
 def _(mo):
     mo.md(
         """
-        ## E1 — Unconstrained Baseline (LightGBM on all numeric features)
+        ## E1 — Unconstrained baseline (LightGBM on all numeric features)
 
-        Reveals the AUC ceiling achievable with `application_train` alone. The
-        questionnaire constraint excludes `EXT_SOURCE_*`; here we *include* them
-        to quantify the cost of the constraint.
+        Reveals the AUC ceiling reachable with `application_train` alone. The
+        questionnaire constraint excludes `EXT_SOURCE_*`; here we **include**
+        them to quantify the cost of the constraint.
         """
     )
     return
 
 
 @app.cell
-def _(RANDOM_STATE, app, np, roc_auc_score, time, train_test_split):
+def _(RANDOM_STATE, app_eng, np, roc_auc_score, time, train_test_split):
     from lightgbm import LGBMClassifier
 
     numeric_cols = (
-        app.select_dtypes(include=[np.number])
+        app_eng.select_dtypes(include=[np.number])
         .columns.drop(["sk_id_curr", "target"])
         .tolist()
     )
 
-    X_uc = app[numeric_cols].copy().fillna(app[numeric_cols].median(numeric_only=True))
-    y = app["target"].astype(int)
+    X_uc = app_eng[numeric_cols].copy().fillna(
+        app_eng[numeric_cols].median(numeric_only=True)
+    )
+    y_full = app_eng["target"].astype(int)
 
-    X_tr, X_te, y_tr, y_te = train_test_split(
-        X_uc, y, test_size=0.2, random_state=RANDOM_STATE, stratify=y
+    X_tr_uc, X_te_uc, y_tr_uc, y_te_uc = train_test_split(
+        X_uc, y_full, test_size=0.2, random_state=RANDOM_STATE, stratify=y_full
     )
 
     lgbm_e1 = LGBMClassifier(
@@ -152,41 +157,26 @@ def _(RANDOM_STATE, app, np, roc_auc_score, time, train_test_split):
         random_state=RANDOM_STATE, verbose=-1,
     )
 
-    t0 = time.perf_counter()
-    lgbm_e1.fit(X_tr, y_tr)
-    e1_time = round(time.perf_counter() - t0, 1)
-    e1_auc = round(
-        roc_auc_score(y_te, lgbm_e1.predict_proba(X_te)[:, 1]),
-        4,
-    )
+    t0_e1 = time.perf_counter()
+    lgbm_e1.fit(X_tr_uc, y_tr_uc)
+    e1_time = round(time.perf_counter() - t0_e1, 1)
+    e1_auc = round(roc_auc_score(y_te_uc, lgbm_e1.predict_proba(X_te_uc)[:, 1]), 4)
 
     e1_result = {
-        "experiment": "E1 unconstrained baseline",
+        "experiment": "E1 — unconstrained baseline",
         "features": len(numeric_cols),
         "train_time_s": e1_time,
         "roc_auc": e1_auc,
     }
     e1_result
-    return (
-        LGBMClassifier,
-        X_te,
-        X_tr,
-        e1_auc,
-        e1_result,
-        e1_time,
-        lgbm_e1,
-        numeric_cols,
-        y,
-        y_te,
-        y_tr,
-    )
+    return LGBMClassifier, e1_result, y_full
 
 
 @app.cell
 def _(mo):
     mo.md(
         """
-        ## E2a — Engineered Ratios on the 15-Feature Constraint
+        ## E2a — Engineered ratios on the questionnaire surface
 
         Five ratio features derived from columns the production app already
         collects. Zero-data-cost feature engineering: the application form does
@@ -197,7 +187,15 @@ def _(mo):
 
 
 @app.cell
-def _(LGBMClassifier, RANDOM_STATE, app, roc_auc_score, time, train_test_split):
+def _(
+    LGBMClassifier,
+    RANDOM_STATE,
+    app_eng,
+    roc_auc_score,
+    time,
+    train_test_split,
+    y_full,
+):
     questionnaire_numeric = [
         "cnt_children", "amt_income_total", "amt_credit", "amt_annuity",
         "cnt_fam_members", "days_birth", "days_employed",
@@ -207,26 +205,22 @@ def _(LGBMClassifier, RANDOM_STATE, app, roc_auc_score, time, train_test_split):
         "years_employed_ratio", "income_per_family_member",
     ]
 
-    X_e2a = app[questionnaire_numeric + ratio_features].copy()
+    X_e2a = app_eng[questionnaire_numeric + ratio_features].copy()
     X_e2a = X_e2a.fillna(X_e2a.median(numeric_only=True))
-    y_e2a = app["target"].astype(int)
 
     X_tr2, X_te2, y_tr2, y_te2 = train_test_split(
-        X_e2a, y_e2a, test_size=0.2,
-        random_state=RANDOM_STATE, stratify=y_e2a,
+        X_e2a, y_full, test_size=0.2,
+        random_state=RANDOM_STATE, stratify=y_full,
     )
     lgbm_e2a = LGBMClassifier(
         n_estimators=300, learning_rate=0.05, num_leaves=63,
         subsample=0.8, colsample_bytree=0.8,
         random_state=RANDOM_STATE, verbose=-1,
     )
-    t0 = time.perf_counter()
+    t0_e2a = time.perf_counter()
     lgbm_e2a.fit(X_tr2, y_tr2)
-    e2a_time = round(time.perf_counter() - t0, 1)
-    e2a_auc = round(
-        roc_auc_score(y_te2, lgbm_e2a.predict_proba(X_te2)[:, 1]),
-        4,
-    )
+    e2a_time = round(time.perf_counter() - t0_e2a, 1)
+    e2a_auc = round(roc_auc_score(y_te2, lgbm_e2a.predict_proba(X_te2)[:, 1]), 4)
     e2a_result = {
         "experiment": "E2a — Questionnaire + 5 ratios",
         "features": X_e2a.shape[1],
@@ -234,37 +228,21 @@ def _(LGBMClassifier, RANDOM_STATE, app, roc_auc_score, time, train_test_split):
         "roc_auc": e2a_auc,
     }
     e2a_result
-    return (
-        X_e2a,
-        X_te2,
-        X_tr2,
-        e2a_auc,
-        e2a_result,
-        e2a_time,
-        lgbm_e2a,
-        questionnaire_numeric,
-        ratio_features,
-        y_e2a,
-        y_te2,
-        y_tr2,
-    )
+    return X_te2, X_tr2, e2a_result, y_te2, y_tr2
 
 
 @app.cell
 def _(mo):
     mo.md(
         """
-        ## E4 — Tabular GAN (CTGAN) Minority-Class Synthetic Balancing
+        ## E4 — CTGAN minority-class synthetic balancing
 
-        Replaces `SMOTETomek` (synthetic-minority oversampling + Tomek-link
-        cleaning) with **CTGAN** (Conditional Tabular GAN; Xu et al. NeurIPS
-        2019). CTGAN is the de-facto standard for synthesising realistic
-        tabular records, including modelling discrete columns natively via
-        conditional generation.
+        Replaces `SMOTETomek` (linear interpolation + Tomek cleaning) with
+        **CTGAN** (Conditional Tabular GAN; Xu et al. NeurIPS 2019). CTGAN
+        models the joint distribution of all columns, handling discrete
+        columns natively via conditional generation.
 
-        Owner: **Laurynas Žalaga** (Sprint 4 task LZ-9).
-
-        Reference: <https://arxiv.org/abs/1907.00503> · <https://docs.sdv.dev/sdv/single-table-data/modeling/synthesizers/ctgansynthesizer>
+        Reference: <https://arxiv.org/abs/1907.00503>
         """
     )
     return
@@ -274,23 +252,20 @@ def _(mo):
 def _(
     LGBMClassifier,
     RANDOM_STATE,
-    X_e2a,
     X_te2,
     X_tr2,
     roc_auc_score,
     time,
-    y_e2a,
     y_te2,
     y_tr2,
 ):
     try:
         from ctgan import CTGAN
+        import pandas as _pd
+        import numpy as _np
 
-        # Train CTGAN only on minority class (defaults) — generate enough synthetic
-        # samples to roughly balance the training set.
         minority_train = X_tr2[y_tr2 == 1].copy()
         minority_count_target = int((y_tr2 == 0).sum())
-        # Subsample to speed up GAN training (CTGAN on 250K rows is slow)
         minority_sample = minority_train.sample(
             n=min(5000, len(minority_train)),
             random_state=RANDOM_STATE,
@@ -299,13 +274,9 @@ def _(
         ctgan_t0 = time.perf_counter()
         ctgan = CTGAN(epochs=50, verbose=False, cuda=False)
         ctgan.fit(minority_sample.reset_index(drop=True))
-        n_to_generate = minority_count_target - (y_tr2 == 1).sum()
+        n_to_generate = minority_count_target - int((y_tr2 == 1).sum())
         synth = ctgan.sample(n_to_generate)
         ctgan_time = round(time.perf_counter() - ctgan_t0, 1)
-
-        # Build balanced training set
-        import pandas as _pd
-        import numpy as _np
 
         X_balanced = _pd.concat(
             [X_tr2, synth.reset_index(drop=True)], ignore_index=True
@@ -320,10 +291,7 @@ def _(
             random_state=RANDOM_STATE, verbose=-1,
         )
         lgbm_e4.fit(X_balanced, y_balanced)
-        e4_auc = round(
-            roc_auc_score(y_te2, lgbm_e4.predict_proba(X_te2)[:, 1]),
-            4,
-        )
+        e4_auc = round(roc_auc_score(y_te2, lgbm_e4.predict_proba(X_te2)[:, 1]), 4)
         e4_result = {
             "experiment": "E4 — CTGAN-balanced LightGBM",
             "ctgan_train_time_s": ctgan_time,
@@ -343,12 +311,12 @@ def _(
 def _(mo):
     mo.md(
         """
-        ## E5 — Stacking Ensemble + Probability Calibration
+        ## E5 — Stacking ensemble + probability calibration
 
-        Final Kaggle-top-solution practices: stack LightGBM + GBM (+ optional
-        XGBoost) with a Logistic Regression meta-learner, then calibrate the
-        meta-learner's probabilities with `CalibratedClassifierCV`. Calibration
-        does not improve ROC-AUC but lowers Brier score — critical when the
+        Stack LightGBM + GBM (+ optional XGBoost) with a Logistic Regression
+        meta-learner, then calibrate the meta-learner's probabilities with
+        `CalibratedClassifierCV`. Calibration does not improve ROC-AUC (it is
+        a monotone transform) but lowers Brier score — critical when the
         score is shown to loan officers as a percentage.
         """
     )
@@ -356,20 +324,11 @@ def _(mo):
 
 
 @app.cell
-def _(
-    LGBMClassifier,
-    RANDOM_STATE,
-    X_te2,
-    X_tr2,
-    roc_auc_score,
-    y_te2,
-    y_tr2,
-):
-    from sklearn.ensemble import GradientBoostingClassifier, StackingClassifier
-    from sklearn.linear_model import LogisticRegression
+def _(LGBMClassifier, RANDOM_STATE, X_te2, X_tr2, roc_auc_score, y_te2, y_tr2):
     from sklearn.calibration import CalibratedClassifierCV
-    # sklearn ≥ 1.6 deprecated cv="prefit"; FrozenEstimator replaces it.
+    from sklearn.ensemble import GradientBoostingClassifier, StackingClassifier
     from sklearn.frozen import FrozenEstimator
+    from sklearn.linear_model import LogisticRegression
     from sklearn.metrics import brier_score_loss
 
     base_estimators = [
@@ -414,8 +373,6 @@ def _(
     stack_proba = stack.predict_proba(X_te2)[:, 1]
     e5_auc = round(roc_auc_score(y_te2, stack_proba), 4)
 
-    # Calibration via Platt scaling (sigmoid) on the trained stack.
-    # FrozenEstimator prevents CalibratedClassifierCV from retraining the stack.
     calibrator = CalibratedClassifierCV(
         FrozenEstimator(stack), method="sigmoid", cv=5,
     )
@@ -432,7 +389,43 @@ def _(
         "base_models": [name for name, _ in base_estimators],
     }
     e5_result
-    return (e5_result, stack, calibrator)
+    return (e5_result,)
+
+
+@app.cell
+def _(mo):
+    mo.md(
+        """
+        ## Top-25 squeeze pipeline — summary
+
+        Loaded from `scripts/results/squeeze_summary.json`. The squeeze
+        pipeline lives in `scripts/squeeze_top25_accuracy.py` and produces
+        the production Standard+ model at `src/assets/top25_risk_model.pkl`.
+        """
+    )
+    return
+
+
+@app.cell
+def _(RESULTS_DIRECTORY, mo, pd):
+    import json as _json
+    with open(RESULTS_DIRECTORY / "squeeze_summary.json") as _f:
+        squeeze = _json.load(_f)
+
+    stage_rows = [
+        ("Production GBM (15 fields)",   squeeze["stages"]["production_reference"]["auc"]),
+        ("S1 — Top-25 only",             squeeze["stages"]["stage1_top25_only"]["auc"]),
+        ("S1+ratios — Top-25 + 6 ratios", squeeze["stages"]["S1_top25_plus_ratios"]["auc"]),
+        ("S2 — RandomizedSearchCV",      squeeze["stages"]["S2_randomized_search"]["auc"]),
+        ("S3 — CTGAN-balanced",          squeeze["stages"]["S3_ctgan_balanced"]["auc"]),
+        ("S4 — Stacking + calibration",  squeeze["stages"]["S4_stacking"]["stack_auc"]),
+    ]
+    stage_df = pd.DataFrame(stage_rows, columns=["Stage", "ROC-AUC"])
+    stage_df["Δ vs production"] = (
+        stage_df["ROC-AUC"] - stage_df["ROC-AUC"].iloc[0]
+    ).round(4)
+    mo.ui.table(stage_df)
+    return squeeze, stage_df
 
 
 @app.cell
