@@ -1,0 +1,82 @@
+{
+  "feature_count": 31,
+  "categorical_features": [
+    "organization_type",
+    "occupation_type",
+    "weekday_appr_process_start",
+    "code_gender",
+    "flag_own_car",
+    "flag_own_realty",
+    "name_contract_type",
+    "name_family_status"
+  ],
+  "numeric_features": [
+    "amt_annuity",
+    "days_id_publish",
+    "days_birth",
+    "days_registration",
+    "days_employed",
+    "amt_credit",
+    "region_population_relative",
+    "amt_income_total",
+    "amt_goods_price",
+    "hour_appr_process_start",
+    "own_car_age",
+    "cnt_fam_members",
+    "cnt_children",
+    "region_rating_client_w_city",
+    "flag_work_phone",
+    "flag_phone",
+    "reg_city_not_work_city"
+  ],
+  "derived_ratios": [
+    "dti",
+    "credit_to_income",
+    "annuity_to_credit",
+    "credit_to_goods",
+    "years_employed_ratio",
+    "income_per_family_member"
+  ],
+  "stages": {
+    "production_reference": {
+      "auc": 0.6272,
+      "notes": "Practical 2 baseline"
+    },
+    "stage1_top25_only": {
+      "auc": 0.6854
+    },
+    "S1_top25_plus_ratios": {
+      "auc": 0.7093,
+      "train_time_s": 2.8
+    },
+    "S2_randomized_search": {
+      "auc": 0.7146,
+      "best_cv_auc": 0.7041,
+      "best_params": {
+        "subsample": 0.8,
+        "reg_lambda": 1.0,
+        "reg_alpha": 0,
+        "num_leaves": 31,
+        "n_estimators": 700,
+        "min_child_samples": 50,
+        "learning_rate": 0.02,
+        "colsample_bytree": 0.6
+      },
+      "train_time_s": 43.4
+    },
+    "S3_ctgan_balanced": {
+      "auc": 0.7119,
+      "ctgan_train_s": 8.7,
+      "ctgan_sample_s": 0.4,
+      "lgbm_train_s": 5.6
+    },
+    "S4_stacking": {
+      "stack_auc": 0.7142,
+      "calibrated_auc": 0.7142,
+      "brier_uncalibrated": 0.0709,
+      "brier_calibrated": 0.0717,
+      "stack_train_time_s": 196.5
+    }
+  },
+  "best_overall_auc": 0.7146
+}
