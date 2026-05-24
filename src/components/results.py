@@ -64,8 +64,8 @@ class ResultsDisplay:
         with col1:
             st.metric(
                 "Risk Score",
-                f"{risk_score}/1000",
-                help="Risk score from 0 (lowest risk) to 1000 (highest risk)",
+                f"{risk_score}/100",
+                help="Risk score from 0 (lowest risk) to 100 (highest risk) — equal to default probability in percent.",
             )
 
         with col2:
