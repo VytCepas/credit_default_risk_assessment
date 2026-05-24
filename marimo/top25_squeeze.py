@@ -14,33 +14,33 @@ Sections:
   4. Insights (counter-factuals, cohort percentile, loan-affordability).
   5. Bundle metadata + reproducibility recipe.
 """
+
 import marimo
 
-__generated_with = "0.23.8"
+__generated_with = "0.23.6"
 app = marimo.App(width="medium")
 
 
 @app.cell
 def _():
     import marimo as mo
+
     return (mo,)
 
 
 @app.cell
 def _(mo):
-    mo.md(
-        """
-        # Top-25 Standard+ tier — reactive playground
+    mo.md("""
+    # Top-25 Standard+ tier — reactive playground
 
-        This notebook loads the production Standard+ model bundle and lets you
-        explore predictions interactively. Slider/input changes propagate
-        automatically through every downstream cell.
+    This notebook loads the production Standard+ model bundle and lets you
+    explore predictions interactively. Slider/input changes propagate
+    automatically through every downstream cell.
 
-        **Production model:** tuned LightGBM on 25 self-reportable features +
-        6 derived ratios. Holdout ROC-AUC = **0.7146** (Kaggle median ~0.75).
-        Source bundle: `src/assets/top25_risk_model.pkl`.
-        """
-    )
+    **Production model:** tuned LightGBM on 25 self-reportable features +
+    6 derived ratios. Holdout ROC-AUC = **0.7146** (Kaggle median ~0.75).
+    Source bundle: `src/assets/top25_risk_model.pkl`.
+    """)
     return
 
 
@@ -59,7 +59,7 @@ def _():
     from models.top25_predictor import Top25Predictor
     from models import insights
 
-    return PROJECT_ROOT, Top25Predictor, insights, np, pd, px
+    return PROJECT_ROOT, Top25Predictor, insights, pd, px
 
 
 @app.cell
@@ -86,7 +86,9 @@ def _(mo, predictor):
 
 @app.cell
 def _(mo):
-    mo.md("## 2. Feature importance (gain) — what drives the model?")
+    mo.md("""
+    ## 2. Feature importance (gain) — what drives the model?
+    """)
     return
 
 
@@ -113,12 +115,14 @@ def _(pd, predictor, px):
     else:
         out = "Feature importance not exposed by this model wrapper."
     out
-    return (out,)
+    return
 
 
 @app.cell
 def _(mo):
-    mo.md("## 3. Interactive what-if profile")
+    mo.md("""
+    ## 3. Interactive what-if profile
+    """)
     return
 
 
@@ -161,15 +165,28 @@ def _(mo):
         mo.hstack([num_family, num_children]),
     ])
     return (
-        age, credit_amount, goods_price, income, loan_annuity,
-        num_children, num_family, years_employed,
+        age,
+        credit_amount,
+        goods_price,
+        income,
+        loan_annuity,
+        num_children,
+        num_family,
+        years_employed,
     )
 
 
 @app.cell
 def _(
-    age, credit_amount, goods_price, income, loan_annuity,
-    num_children, num_family, predictor, years_employed,
+    age,
+    credit_amount,
+    goods_price,
+    income,
+    loan_annuity,
+    num_children,
+    num_family,
+    predictor,
+    years_employed,
 ):
     form = {
         "gender": "Male",
@@ -219,7 +236,9 @@ def _(mo, result):
 
 @app.cell
 def _(mo):
-    mo.md("## 4. Insights for this profile")
+    mo.md("""
+    ## 4. Insights for this profile
+    """)
     return
 
 
@@ -263,44 +282,6 @@ def _(counter_factuals, mo):
         )
         body = rows
     mo.md(f"### Counter-factual quick wins\n\n{body}")
-    return
-
-
-@app.cell
-def _(mo):
-    mo.md("## 5. Reproducibility recipe")
-    return
-
-
-@app.cell
-def _(mo):
-    mo.md(
-        """
-        From the project root:
-
-        ```bash
-        # 1. Feature selection (top 25 of 38 self-reportable candidates)
-        .venv/bin/python scripts/select_top25_features.py
-
-        # 2. Full squeeze pipeline (~5 min CPU)
-        .venv/bin/python scripts/squeeze_top25_accuracy.py
-
-        # 3. Precompute insight artefacts
-        .venv/bin/python scripts/precompute_insights.py
-
-        # The squeeze script writes scripts/results/best_top25_model.pkl,
-        # which is then copied to src/assets/top25_risk_model.pkl by the build
-        # step. This notebook loads the latter.
-        ```
-
-        Source of truth:
-
-        - `scripts/results/squeeze_summary.json` — per-stage AUC + best params
-        - `scripts/results/top25_features.json` — feature ranking + selection
-        - `scripts/results/cohort_distributions.json` — for cohort percentile insight
-        - `scripts/results/industry_region_benchmarks.json` — for industry/region context
-        """
-    )
     return
 
 
