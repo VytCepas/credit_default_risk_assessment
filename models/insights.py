@@ -417,40 +417,83 @@ def time_to_improvement(
 # P-09 — risk decomposition by feature group (uses SHAP if available)
 # ---------------------------------------------------------------------------
 def risk_decomposition(predictor, form: dict) -> dict:
-    """Group SHAP attributions into categories and return percentage breakdown.
+    """Per-applicant SHAP attribution for the predicted probability.
 
-    Falls back to feature-importance-weighted attribution if the underlying
-    model does not expose ``feature_importances_`` or SHAP fails.
+    Returns signed per-feature SHAP values (positive = pushes toward default,
+    negative = pushes away) plus a friendlier "group totals" view that bins
+    features into the categories declared in :data:`FEATURE_GROUPS`.
+
+    Falls back to a stub dict if SHAP cannot be constructed for the model
+    type (only tree-based models are supported by ``shap.TreeExplainer``).
     """
     try:
-        model = predictor.model
-        importances = getattr(model, "feature_importances_", None)
-        if importances is None and hasattr(model, "named_steps"):
-            for step in reversed(list(model.named_steps.values())):
-                if hasattr(step, "feature_importances_"):
-                    importances = step.feature_importances_
-                    break
-    except Exception:
-        importances = None
-
-    if importances is None or len(importances) != len(predictor.feature_set):
+        import shap
+    except ImportError:
         return {
+            "features": [],
             "groups": {},
-            "note": "Feature attributions unavailable for this model type.",
+            "note": "shap is not installed.",
         }
 
-    importances = np.asarray(importances, dtype=float)
-    importances = importances / importances.sum() if importances.sum() > 0 else importances
+    model = predictor.model
+    if not hasattr(model, "predict_proba") or model.__class__.__name__ not in {
+        "LGBMClassifier",
+        "XGBClassifier",
+        "CatBoostClassifier",
+        "GradientBoostingClassifier",
+        "RandomForestClassifier",
+    }:
+        return {
+            "features": [],
+            "groups": {},
+            "note": (
+                f"SHAP attribution is only computed for tree-based models; "
+                f"this bundle is {model.__class__.__name__}."
+            ),
+        }
 
+    X = predictor._prepare_input(form)
+    try:
+        explainer = shap.TreeExplainer(model)
+        sv = explainer.shap_values(X)
+        # LightGBM binary returns either (1, n_features) or list of 2 arrays.
+        if isinstance(sv, list):
+            sv = sv[1] if len(sv) > 1 else sv[0]
+        contributions = np.asarray(sv).reshape(-1)
+        base_value = explainer.expected_value
+        if isinstance(base_value, (list, np.ndarray)):
+            base_value = float(np.asarray(base_value).ravel()[-1])
+        else:
+            base_value = float(base_value)
+    except Exception as exc:  # noqa: BLE001
+        return {
+            "features": [],
+            "groups": {},
+            "note": f"SHAP computation failed: {exc!s}",
+        }
+
+    feature_rows = []
     group_totals: dict[str, float] = {}
-    for col, imp in zip(predictor.feature_set, importances):
-        group = FEATURE_GROUPS.get(col, "Other")
-        group_totals[group] = group_totals.get(group, 0.0) + float(imp)
-    # normalize to percentages
-    total = sum(group_totals.values()) or 1.0
+    for col, contrib, value in zip(
+        predictor.feature_set, contributions, X.iloc[0].tolist()
+    ):
+        feature_rows.append(
+            {
+                "feature": col,
+                "shap": float(contrib),
+                "value": float(value) if isinstance(value, (int, float, np.floating)) else value,
+                "group": FEATURE_GROUPS.get(col, "Other"),
+            }
+        )
+        group_totals.setdefault(FEATURE_GROUPS.get(col, "Other"), 0.0)
+        group_totals[FEATURE_GROUPS.get(col, "Other")] += float(contrib)
+
+    feature_rows.sort(key=lambda r: abs(r["shap"]), reverse=True)
     return {
-        "groups": {g: round(v / total * 100, 1) for g, v in group_totals.items()},
-        "method": "Feature importance (global)",
+        "method": "SHAP (TreeExplainer, log-odds units)",
+        "base_value": base_value,
+        "features": feature_rows,
+        "groups": {g: round(v, 4) for g, v in group_totals.items()},
     }
 
 

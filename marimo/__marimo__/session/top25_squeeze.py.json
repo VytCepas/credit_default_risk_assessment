@@ -1,0 +1,230 @@
+{
+  "version": "1",
+  "metadata": {
+    "marimo_version": "0.23.8",
+    "script_metadata_hash": null
+  },
+  "cells": [
+    {
+      "id": "Hbol",
+      "code_hash": "1d0db38904205bec4d6f6f6a1f6cec3e",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "MJUe",
+      "code_hash": "fa98a4853478675d5056ff040619d18e",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "# Top-25 Standard+ tier \u2014 reactive playground\n\nThis notebook loads the production Standard+ model bundle and lets you\nexplore predictions interactively. Slider/input changes propagate\nautomatically through every downstream cell.\n\n**Production model:** tuned LightGBM on 25 self-reportable features +\n6 derived ratios. Holdout ROC-AUC = **0.7146** (Kaggle median ~0.75).\nSource bundle: `src/assets/top25_risk_model.pkl`."
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "vblA",
+      "code_hash": "4dd5ef0df539388e57af4089a3581929",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "bkHC",
+      "code_hash": "90b59de90a21206f4ff605cc4b597de3",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "lEQa",
+      "code_hash": "388e4ee7f8b5ec0ba574b78e7102bebd",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "### Bundle metadata\n\n- **Best model:** `S2_tuned_lgbm`\n- **Holdout ROC-AUC:** `0.7146`\n- **Total inputs:** 31 (25 selected + 6 derived ratios)\n- **Categorical features (8):** organization_type, occupation_type, weekday_appr_process_start, code_gender, flag_own_car, flag_own_realty, name_contract_type, name_family_status\n- **Numeric features (17):** amt_annuity, days_id_publish, days_birth, days_registration, days_employed, amt_credit, region_population_relative, amt_income_total, amt_goods_price, hour_appr_process_start, own_car_age, cnt_fam_members, cnt_children, region_rating_client_w_city, flag_work_phone, flag_phone, reg_city_not_work_city"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "PKri",
+      "code_hash": "61d3baf938da4bc558179e54edb51fb1",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "## 2. Feature importance (gain) \u2014 what drives the model?"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "Xref",
+      "code_hash": "8c3366eac342771726d18ebdd8bbf7a3",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/html": "<marimo-plotly data-figure='{&quot;data&quot;:[{&quot;hovertemplate&quot;:&quot;gain=%{x}&#92;u003cbr&#92;u003efeature=%{y}&#92;u003cextra&#92;u003e&#92;u003c/extra&#92;u003e&quot;,&quot;legendgroup&quot;:&quot;&quot;,&quot;marker&quot;:{&quot;color&quot;:&quot;#636efa&quot;,&quot;pattern&quot;:{&quot;shape&quot;:&quot;&quot;}},&quot;name&quot;:&quot;&quot;,&quot;orientation&quot;:&quot;h&quot;,&quot;showlegend&quot;:false,&quot;textposition&quot;:&quot;auto&quot;,&quot;x&quot;:{&quot;dtype&quot;:&quot;i4&quot;,&quot;bdata&quot;:&quot;VwEAAJABAAC/AQAA9gEAAHYCAACHAgAAoQIAANYCAAAHAwAAFAMAAGQDAABvAwAArQMAALQDAADZAwAAKgQAAD8EAABMBAAAngkAAEYLAAA=&quot;},&quot;xaxis&quot;:&quot;x&quot;,&quot;y&quot;:[&quot;region_rating_client_w_city&quot;,&quot;hour_appr_process_start&quot;,&quot;own_car_age&quot;,&quot;amt_income_total&quot;,&quot;credit_to_income&quot;,&quot;income_per_family_member&quot;,&quot;amt_credit&quot;,&quot;years_employed_ratio&quot;,&quot;days_employed&quot;,&quot;dti&quot;,&quot;amt_annuity&quot;,&quot;amt_goods_price&quot;,&quot;credit_to_goods&quot;,&quot;days_registration&quot;,&quot;occupation_type&quot;,&quot;region_population_relative&quot;,&quot;days_id_publish&quot;,&quot;days_birth&quot;,&quot;organization_type&quot;,&quot;annuity_to_credit&quot;],&quot;yaxis&quot;:&quot;y&quot;,&quot;type&quot;:&quot;bar&quot;}],&quot;layout&quot;:{&quot;template&quot;:{&quot;data&quot;:{&quot;histogram2dcontour&quot;:[{&quot;type&quot;:&quot;histogram2dcontour&quot;,&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;},&quot;colorscale&quot;:[[0.0,&quot;#0d0887&quot;],[0.1111111111111111,&quot;#46039f&quot;],[0.2222222222222222,&quot;#7201a8&quot;],[0.3333333333333333,&quot;#9c179e&quot;],[0.4444444444444444,&quot;#bd3786&quot;],[0.5555555555555556,&quot;#d8576b&quot;],[0.6666666666666666,&quot;#ed7953&quot;],[0.7777777777777778,&quot;#fb9f3a&quot;],[0.8888888888888888,&quot;#fdca26&quot;],[1.0,&quot;#f0f921&quot;]]}],&quot;choropleth&quot;:[{&quot;type&quot;:&quot;choropleth&quot;,&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;}}],&quot;histogram2d&quot;:[{&quot;type&quot;:&quot;histogram2d&quot;,&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;},&quot;colorscale&quot;:[[0.0,&quot;#0d0887&quot;],[0.1111111111111111,&quot;#46039f&quot;],[0.2222222222222222,&quot;#7201a8&quot;],[0.3333333333333333,&quot;#9c179e&quot;],[0.4444444444444444,&quot;#bd3786&quot;],[0.5555555555555556,&quot;#d8576b&quot;],[0.6666666666666666,&quot;#ed7953&quot;],[0.7777777777777778,&quot;#fb9f3a&quot;],[0.8888888888888888,&quot;#fdca26&quot;],[1.0,&quot;#f0f921&quot;]]}],&quot;heatmap&quot;:[{&quot;type&quot;:&quot;heatmap&quot;,&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;},&quot;colorscale&quot;:[[0.0,&quot;#0d0887&quot;],[0.1111111111111111,&quot;#46039f&quot;],[0.2222222222222222,&quot;#7201a8&quot;],[0.3333333333333333,&quot;#9c179e&quot;],[0.4444444444444444,&quot;#bd3786&quot;],[0.5555555555555556,&quot;#d8576b&quot;],[0.6666666666666666,&quot;#ed7953&quot;],[0.7777777777777778,&quot;#fb9f3a&quot;],[0.8888888888888888,&quot;#fdca26&quot;],[1.0,&quot;#f0f921&quot;]]}],&quot;contourcarpet&quot;:[{&quot;type&quot;:&quot;contourcarpet&quot;,&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;}}],&quot;contour&quot;:[{&quot;type&quot;:&quot;contour&quot;,&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;},&quot;colorscale&quot;:[[0.0,&quot;#0d0887&quot;],[0.1111111111111111,&quot;#46039f&quot;],[0.2222222222222222,&quot;#7201a8&quot;],[0.3333333333333333,&quot;#9c179e&quot;],[0.4444444444444444,&quot;#bd3786&quot;],[0.5555555555555556,&quot;#d8576b&quot;],[0.6666666666666666,&quot;#ed7953&quot;],[0.7777777777777778,&quot;#fb9f3a&quot;],[0.8888888888888888,&quot;#fdca26&quot;],[1.0,&quot;#f0f921&quot;]]}],&quot;surface&quot;:[{&quot;type&quot;:&quot;surface&quot;,&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;},&quot;colorscale&quot;:[[0.0,&quot;#0d0887&quot;],[0.1111111111111111,&quot;#46039f&quot;],[0.2222222222222222,&quot;#7201a8&quot;],[0.3333333333333333,&quot;#9c179e&quot;],[0.4444444444444444,&quot;#bd3786&quot;],[0.5555555555555556,&quot;#d8576b&quot;],[0.6666666666666666,&quot;#ed7953&quot;],[0.7777777777777778,&quot;#fb9f3a&quot;],[0.8888888888888888,&quot;#fdca26&quot;],[1.0,&quot;#f0f921&quot;]]}],&quot;mesh3d&quot;:[{&quot;type&quot;:&quot;mesh3d&quot;,&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;}}],&quot;scatter&quot;:[{&quot;fillpattern&quot;:{&quot;fillmode&quot;:&quot;overlay&quot;,&quot;size&quot;:10,&quot;solidity&quot;:0.2},&quot;type&quot;:&quot;scatter&quot;}],&quot;parcoords&quot;:[{&quot;type&quot;:&quot;parcoords&quot;,&quot;line&quot;:{&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;}}}],&quot;scatterpolargl&quot;:[{&quot;type&quot;:&quot;scatterpolargl&quot;,&quot;marker&quot;:{&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;}}}],&quot;bar&quot;:[{&quot;error_x&quot;:{&quot;color&quot;:&quot;#2a3f5f&quot;},&quot;error_y&quot;:{&quot;color&quot;:&quot;#2a3f5f&quot;},&quot;marker&quot;:{&quot;line&quot;:{&quot;color&quot;:&quot;#E5ECF6&quot;,&quot;width&quot;:0.5},&quot;pattern&quot;:{&quot;fillmode&quot;:&quot;overlay&quot;,&quot;size&quot;:10,&quot;solidity&quot;:0.2}},&quot;type&quot;:&quot;bar&quot;}],&quot;scattergeo&quot;:[{&quot;type&quot;:&quot;scattergeo&quot;,&quot;marker&quot;:{&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;}}}],&quot;scatterpolar&quot;:[{&quot;type&quot;:&quot;scatterpolar&quot;,&quot;marker&quot;:{&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;}}}],&quot;histogram&quot;:[{&quot;marker&quot;:{&quot;pattern&quot;:{&quot;fillmode&quot;:&quot;overlay&quot;,&quot;size&quot;:10,&quot;solidity&quot;:0.2}},&quot;type&quot;:&quot;histogram&quot;}],&quot;scattergl&quot;:[{&quot;type&quot;:&quot;scattergl&quot;,&quot;marker&quot;:{&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;}}}],&quot;scatter3d&quot;:[{&quot;type&quot;:&quot;scatter3d&quot;,&quot;line&quot;:{&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;}},&quot;marker&quot;:{&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;}}}],&quot;scattermap&quot;:[{&quot;type&quot;:&quot;scattermap&quot;,&quot;marker&quot;:{&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;}}}],&quot;scattermapbox&quot;:[{&quot;type&quot;:&quot;scattermapbox&quot;,&quot;marker&quot;:{&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;}}}],&quot;scatterternary&quot;:[{&quot;type&quot;:&quot;scatterternary&quot;,&quot;marker&quot;:{&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;}}}],&quot;scattercarpet&quot;:[{&quot;type&quot;:&quot;scattercarpet&quot;,&quot;marker&quot;:{&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;}}}],&quot;carpet&quot;:[{&quot;aaxis&quot;:{&quot;endlinecolor&quot;:&quot;#2a3f5f&quot;,&quot;gridcolor&quot;:&quot;white&quot;,&quot;linecolor&quot;:&quot;white&quot;,&quot;minorgridcolor&quot;:&quot;white&quot;,&quot;startlinecolor&quot;:&quot;#2a3f5f&quot;},&quot;baxis&quot;:{&quot;endlinecolor&quot;:&quot;#2a3f5f&quot;,&quot;gridcolor&quot;:&quot;white&quot;,&quot;linecolor&quot;:&quot;white&quot;,&quot;minorgridcolor&quot;:&quot;white&quot;,&quot;startlinecolor&quot;:&quot;#2a3f5f&quot;},&quot;type&quot;:&quot;carpet&quot;}],&quot;table&quot;:[{&quot;cells&quot;:{&quot;fill&quot;:{&quot;color&quot;:&quot;#EBF0F8&quot;},&quot;line&quot;:{&quot;color&quot;:&quot;white&quot;}},&quot;header&quot;:{&quot;fill&quot;:{&quot;color&quot;:&quot;#C8D4E3&quot;},&quot;line&quot;:{&quot;color&quot;:&quot;white&quot;}},&quot;type&quot;:&quot;table&quot;}],&quot;barpolar&quot;:[{&quot;marker&quot;:{&quot;line&quot;:{&quot;color&quot;:&quot;#E5ECF6&quot;,&quot;width&quot;:0.5},&quot;pattern&quot;:{&quot;fillmode&quot;:&quot;overlay&quot;,&quot;size&quot;:10,&quot;solidity&quot;:0.2}},&quot;type&quot;:&quot;barpolar&quot;}],&quot;pie&quot;:[{&quot;automargin&quot;:true,&quot;type&quot;:&quot;pie&quot;}]},&quot;layout&quot;:{&quot;autotypenumbers&quot;:&quot;strict&quot;,&quot;colorway&quot;:[&quot;#636efa&quot;,&quot;#EF553B&quot;,&quot;#00cc96&quot;,&quot;#ab63fa&quot;,&quot;#FFA15A&quot;,&quot;#19d3f3&quot;,&quot;#FF6692&quot;,&quot;#B6E880&quot;,&quot;#FF97FF&quot;,&quot;#FECB52&quot;],&quot;font&quot;:{&quot;color&quot;:&quot;#2a3f5f&quot;},&quot;hovermode&quot;:&quot;closest&quot;,&quot;hoverlabel&quot;:{&quot;align&quot;:&quot;left&quot;},&quot;paper_bgcolor&quot;:&quot;white&quot;,&quot;plot_bgcolor&quot;:&quot;#E5ECF6&quot;,&quot;polar&quot;:{&quot;bgcolor&quot;:&quot;#E5ECF6&quot;,&quot;angularaxis&quot;:{&quot;gridcolor&quot;:&quot;white&quot;,&quot;linecolor&quot;:&quot;white&quot;,&quot;ticks&quot;:&quot;&quot;},&quot;radialaxis&quot;:{&quot;gridcolor&quot;:&quot;white&quot;,&quot;linecolor&quot;:&quot;white&quot;,&quot;ticks&quot;:&quot;&quot;}},&quot;ternary&quot;:{&quot;bgcolor&quot;:&quot;#E5ECF6&quot;,&quot;aaxis&quot;:{&quot;gridcolor&quot;:&quot;white&quot;,&quot;linecolor&quot;:&quot;white&quot;,&quot;ticks&quot;:&quot;&quot;},&quot;baxis&quot;:{&quot;gridcolor&quot;:&quot;white&quot;,&quot;linecolor&quot;:&quot;white&quot;,&quot;ticks&quot;:&quot;&quot;},&quot;caxis&quot;:{&quot;gridcolor&quot;:&quot;white&quot;,&quot;linecolor&quot;:&quot;white&quot;,&quot;ticks&quot;:&quot;&quot;}},&quot;coloraxis&quot;:{&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;}},&quot;colorscale&quot;:{&quot;sequential&quot;:[[0.0,&quot;#0d0887&quot;],[0.1111111111111111,&quot;#46039f&quot;],[0.2222222222222222,&quot;#7201a8&quot;],[0.3333333333333333,&quot;#9c179e&quot;],[0.4444444444444444,&quot;#bd3786&quot;],[0.5555555555555556,&quot;#d8576b&quot;],[0.6666666666666666,&quot;#ed7953&quot;],[0.7777777777777778,&quot;#fb9f3a&quot;],[0.8888888888888888,&quot;#fdca26&quot;],[1.0,&quot;#f0f921&quot;]],&quot;sequentialminus&quot;:[[0.0,&quot;#0d0887&quot;],[0.1111111111111111,&quot;#46039f&quot;],[0.2222222222222222,&quot;#7201a8&quot;],[0.3333333333333333,&quot;#9c179e&quot;],[0.4444444444444444,&quot;#bd3786&quot;],[0.5555555555555556,&quot;#d8576b&quot;],[0.6666666666666666,&quot;#ed7953&quot;],[0.7777777777777778,&quot;#fb9f3a&quot;],[0.8888888888888888,&quot;#fdca26&quot;],[1.0,&quot;#f0f921&quot;]],&quot;diverging&quot;:[[0,&quot;#8e0152&quot;],[0.1,&quot;#c51b7d&quot;],[0.2,&quot;#de77ae&quot;],[0.3,&quot;#f1b6da&quot;],[0.4,&quot;#fde0ef&quot;],[0.5,&quot;#f7f7f7&quot;],[0.6,&quot;#e6f5d0&quot;],[0.7,&quot;#b8e186&quot;],[0.8,&quot;#7fbc41&quot;],[0.9,&quot;#4d9221&quot;],[1,&quot;#276419&quot;]]},&quot;xaxis&quot;:{&quot;gridcolor&quot;:&quot;white&quot;,&quot;linecolor&quot;:&quot;white&quot;,&quot;ticks&quot;:&quot;&quot;,&quot;title&quot;:{&quot;standoff&quot;:15},&quot;zerolinecolor&quot;:&quot;white&quot;,&quot;automargin&quot;:true,&quot;zerolinewidth&quot;:2},&quot;yaxis&quot;:{&quot;gridcolor&quot;:&quot;white&quot;,&quot;linecolor&quot;:&quot;white&quot;,&quot;ticks&quot;:&quot;&quot;,&quot;title&quot;:{&quot;standoff&quot;:15},&quot;zerolinecolor&quot;:&quot;white&quot;,&quot;automargin&quot;:true,&quot;zerolinewidth&quot;:2},&quot;scene&quot;:{&quot;xaxis&quot;:{&quot;backgroundcolor&quot;:&quot;#E5ECF6&quot;,&quot;gridcolor&quot;:&quot;white&quot;,&quot;linecolor&quot;:&quot;white&quot;,&quot;showbackground&quot;:true,&quot;ticks&quot;:&quot;&quot;,&quot;zerolinecolor&quot;:&quot;white&quot;,&quot;gridwidth&quot;:2},&quot;yaxis&quot;:{&quot;backgroundcolor&quot;:&quot;#E5ECF6&quot;,&quot;gridcolor&quot;:&quot;white&quot;,&quot;linecolor&quot;:&quot;white&quot;,&quot;showbackground&quot;:true,&quot;ticks&quot;:&quot;&quot;,&quot;zerolinecolor&quot;:&quot;white&quot;,&quot;gridwidth&quot;:2},&quot;zaxis&quot;:{&quot;backgroundcolor&quot;:&quot;#E5ECF6&quot;,&quot;gridcolor&quot;:&quot;white&quot;,&quot;linecolor&quot;:&quot;white&quot;,&quot;showbackground&quot;:true,&quot;ticks&quot;:&quot;&quot;,&quot;zerolinecolor&quot;:&quot;white&quot;,&quot;gridwidth&quot;:2}},&quot;shapedefaults&quot;:{&quot;line&quot;:{&quot;color&quot;:&quot;#2a3f5f&quot;}},&quot;annotationdefaults&quot;:{&quot;arrowcolor&quot;:&quot;#2a3f5f&quot;,&quot;arrowhead&quot;:0,&quot;arrowwidth&quot;:1},&quot;geo&quot;:{&quot;bgcolor&quot;:&quot;white&quot;,&quot;landcolor&quot;:&quot;#E5ECF6&quot;,&quot;subunitcolor&quot;:&quot;white&quot;,&quot;showland&quot;:true,&quot;showlakes&quot;:true,&quot;lakecolor&quot;:&quot;white&quot;},&quot;title&quot;:{&quot;x&quot;:0.05},&quot;mapbox&quot;:{&quot;style&quot;:&quot;light&quot;}}},&quot;xaxis&quot;:{&quot;anchor&quot;:&quot;y&quot;,&quot;domain&quot;:[0.0,1.0],&quot;title&quot;:{&quot;text&quot;:&quot;Gain&quot;}},&quot;yaxis&quot;:{&quot;anchor&quot;:&quot;x&quot;,&quot;domain&quot;:[0.0,1.0],&quot;title&quot;:{&quot;text&quot;:&quot;&quot;}},&quot;legend&quot;:{&quot;tracegroupgap&quot;:0},&quot;title&quot;:{&quot;text&quot;:&quot;Top-20 LightGBM gain importance&quot;},&quot;barmode&quot;:&quot;relative&quot;,&quot;height&quot;:520,&quot;dragmode&quot;:&quot;zoom&quot;}}' data-config='{}'></marimo-plotly>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "SFPL",
+      "code_hash": "bbd6052e43d289370b9988de631fcd5d",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "## 3. Interactive what-if profile"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "BYtC",
+      "code_hash": "4bdcbd4c25b78144ce53ebea5016860a",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/html": "<div style='display: flex;flex: 1;flex-direction: column;justify-content: flex-start;align-items: normal;flex-wrap: nowrap;gap: 0.5rem'><span class=\"markdown prose dark:prose-invert contents\"><span class=\"paragraph\"><strong>Personal &amp; financial</strong></span></span><div style='display: flex;flex: 1;flex-direction: row;justify-content: space-between;align-items: normal;flex-wrap: nowrap;gap: 0.5rem'><marimo-ui-element object-id='BYtC-0' random-id='dcd2f20d-d0e3-1951-d919-a550d10455fb'><marimo-slider data-initial-value='35' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eAge&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-start='18' data-stop='70' data-steps='[]' data-debounce='false' data-disabled='false' data-orientation='&quot;horizontal&quot;' data-show-value='false' data-include-input='false' data-full-width='false'></marimo-slider></marimo-ui-element><marimo-ui-element object-id='BYtC-1' random-id='35e7d4d9-375c-b6dc-d62c-db2b922ac337'><marimo-slider data-initial-value='150000' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eAnnual income (\u20ac)&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-start='20000' data-stop='500000' data-step='5000' data-steps='[]' data-debounce='false' data-disabled='false' data-orientation='&quot;horizontal&quot;' data-show-value='false' data-include-input='false' data-full-width='false'></marimo-slider></marimo-ui-element><marimo-ui-element object-id='BYtC-2' random-id='29128ee8-ed34-de0d-e22e-84817501f1f5'><marimo-slider data-initial-value='5.0' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eYears at current employer&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-start='0.0' data-stop='40.0' data-step='0.5' data-steps='[]' data-debounce='false' data-disabled='false' data-orientation='&quot;horizontal&quot;' data-show-value='false' data-include-input='false' data-full-width='false'></marimo-slider></marimo-ui-element></div><span class=\"markdown prose dark:prose-invert contents\"><span class=\"paragraph\"><strong>Loan</strong></span></span><div style='display: flex;flex: 1;flex-direction: row;justify-content: space-between;align-items: normal;flex-wrap: nowrap;gap: 0.5rem'><marimo-ui-element object-id='BYtC-3' random-id='c2f32851-53b3-2fb0-eb19-b4fd68822385'><marimo-slider data-initial-value='400000' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eLoan amount (\u20ac)&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-start='50000' data-stop='2000000' data-step='10000' data-steps='[]' data-debounce='false' data-disabled='false' data-orientation='&quot;horizontal&quot;' data-show-value='false' data-include-input='false' data-full-width='false'></marimo-slider></marimo-ui-element><marimo-ui-element object-id='BYtC-4' random-id='9f6c1262-6868-8db8-afd7-55945f569e48'><marimo-slider data-initial-value='22000' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eMonthly payment (\u20ac)&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-start='5000' data-stop='200000' data-step='500' data-steps='[]' data-debounce='false' data-disabled='false' data-orientation='&quot;horizontal&quot;' data-show-value='false' data-include-input='false' data-full-width='false'></marimo-slider></marimo-ui-element><marimo-ui-element object-id='BYtC-5' random-id='3e97bac4-38c9-e452-a1ac-61609c03b884'><marimo-slider data-initial-value='400000' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eGoods price (\u20ac, for purchase loans)&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-start='0' data-stop='2000000' data-step='10000' data-steps='[]' data-debounce='false' data-disabled='false' data-orientation='&quot;horizontal&quot;' data-show-value='false' data-include-input='false' data-full-width='false'></marimo-slider></marimo-ui-element></div><span class=\"markdown prose dark:prose-invert contents\"><span class=\"paragraph\"><strong>Household</strong></span></span><div style='display: flex;flex: 1;flex-direction: row;justify-content: space-between;align-items: normal;flex-wrap: nowrap;gap: 0.5rem'><marimo-ui-element object-id='BYtC-6' random-id='340faa00-0476-34db-9fe9-355ff6497810'><marimo-slider data-initial-value='3' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eFamily members&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-start='1' data-stop='10' data-steps='[]' data-debounce='false' data-disabled='false' data-orientation='&quot;horizontal&quot;' data-show-value='false' data-include-input='false' data-full-width='false'></marimo-slider></marimo-ui-element><marimo-ui-element object-id='BYtC-7' random-id='1707b7da-b234-7ea1-7fa7-82462bde8d6c'><marimo-slider data-initial-value='1' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eChildren&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-start='0' data-stop='10' data-steps='[]' data-debounce='false' data-disabled='false' data-orientation='&quot;horizontal&quot;' data-show-value='false' data-include-input='false' data-full-width='false'></marimo-slider></marimo-ui-element></div></div>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "RGSE",
+      "code_hash": "2e1624fac363110e55936dd73242bf7b",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "Kclp",
+      "code_hash": "089342d42a914eb9f0db6e4fa5c43801",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "## Live result\n\n| Metric | Value |\n|---|---|\n| Risk score | **62 / 1000** |\n| Default probability | **6.2%** |\n| Tier | \u2705 **Low** |"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "emfo",
+      "code_hash": "795d7b830b93f1192ea12e9a2cbe684e",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "## 4. Insights for this profile"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "Hstk",
+      "code_hash": "d5c395d009d5f8fba752db46033b62c8",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "nWHF",
+      "code_hash": "0b5dce2c8bb75ea25fea912bb7db2d40",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "### Approval probability + confidence\n\n- **Approval probability:** 94% (band: high)\n- **CI:** 93.1% \u2013 95.0%\n- **Approved at threshold 0.50:** \u2705\n\n### Recommended max loan\n- \u20ac5,000,000 for **Low** tier\n- Headroom exceeds search ceiling."
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "iLit",
+      "code_hash": "bedd25c0b2ffba5a8c10f5b5cb4aa6e2",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "### Counter-factual quick wins\n\n- **loan_annuity**: `22000` \u2192 `16500.0` &nbsp;|&nbsp; score 62 \u2192 44 &nbsp;(**\u0394 -18**)\n- **years_employed**: `5.0` \u2192 `8.0` &nbsp;|&nbsp; score 62 \u2192 55 &nbsp;(**\u0394 -7**)\n- **years_since_id_change**: `4` \u2192 `9.0` &nbsp;|&nbsp; score 62 \u2192 58 &nbsp;(**\u0394 -4**)"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "ZHCJ",
+      "code_hash": "fa5239d3d42c7ac9c3765a1a37e75fc0",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "## 5. Reproducibility recipe"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "ROlb",
+      "code_hash": "66aaa1665b21d53e9e83557d09ffbc2a",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "From the project root:\n\n```bash\n# 1. Feature selection (top 25 of 38 self-reportable candidates)\n.venv/bin/python scripts/select_top25_features.py\n\n# 2. Full squeeze pipeline (~5 min CPU)\n.venv/bin/python scripts/squeeze_top25_accuracy.py\n\n# 3. Precompute insight artefacts\n.venv/bin/python scripts/precompute_insights.py\n\n# The squeeze script writes scripts/results/best_top25_model.pkl,\n# which is then copied to src/assets/top25_risk_model.pkl by the build\n# step. This notebook loads the latter.\n```\n\nSource of truth:\n\n- `scripts/results/squeeze_summary.json` \u2014 per-stage AUC + best params\n- `scripts/results/top25_features.json` \u2014 feature ranking + selection\n- `scripts/results/cohort_distributions.json` \u2014 for cohort percentile insight\n- `scripts/results/industry_region_benchmarks.json` \u2014 for industry/region context"
+          }
+        }
+      ],
+      "console": []
+    }
+  ]
+}
