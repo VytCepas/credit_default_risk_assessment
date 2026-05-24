@@ -118,7 +118,23 @@ def _load_predictor() -> Top25Predictor:
 
 @st.cache_resource(show_spinner=False)
 def _load_cohort_distributions() -> dict:
-    return insights.load_precomputed(COHORT_PATH)
+    """Load cohort distributions, rescaling stored /1000 quantiles to /100.
+
+    The artefact was precomputed when risk_score lived on a 0–1000 scale.
+    The predictor now emits 0–100 to match default-probability percent;
+    quantiles are rescaled here so callers can compare scores directly.
+    """
+    raw = insights.load_precomputed(COHORT_PATH)
+    if not raw:
+        return raw
+    cohorts = raw.get("cohorts", {})
+    for cohort in cohorts.values():
+        q = cohort.get("score_quantiles") or {}
+        cohort["score_quantiles"] = {k: float(v) / 10.0 for k, v in q.items()}
+    fb = raw.get("fallback", {}).get("score_quantiles") or {}
+    if fb:
+        raw["fallback"]["score_quantiles"] = {k: float(v) / 10.0 for k, v in fb.items()}
+    return raw
 
 
 @st.cache_resource(show_spinner=False)
@@ -278,22 +294,71 @@ def _render_assessment_result(form_data: dict[str, Any]) -> None:
         unsafe_allow_html=True,
     )
 
+    gate = result.get("affordability_gate") or {}
+    if gate.get("triggered"):
+        model_pd = gate.get("model_probability", 0.0)
+        final_pd = result["risk_probability"]
+        floor = gate.get("affordability_pd_floor")
+        floor_note = (
+            f"  \n_Default probability raised from the model's_ "
+            f"**{model_pd:.1%}** _to_ **{final_pd:.1%}** _via a deterministic "
+            f"affordability stress score (floor: {floor:.1%})._"
+            if floor is not None and floor > model_pd
+            else ""
+        )
+        if gate.get("overrode_model"):
+            st.error(
+                "**Affordability gate triggered — tier overridden to High.**  \n"
+                f"Model alone would have rated this **{gate.get('model_tier', '?')}** "
+                f"(model PD {model_pd:.1%}), but a deterministic affordability "
+                "check flagged the loan request as unservicable on the declared "
+                "income.  \n  \n"
+                f"_Reason:_ {gate.get('reason', '')}"
+                f"{floor_note}"
+            )
+        else:
+            st.warning(
+                "**Affordability gate also triggered — both signals agree on High.**  \n"
+                f"The model rated this **High** (model PD {model_pd:.1%}), and an "
+                "independent deterministic affordability check confirms the loan "
+                "request is unservicable on the declared income.  \n  \n"
+                f"_Reason:_ {gate.get('reason', '')}"
+                f"{floor_note}"
+            )
+
     # Headline metrics
     col1, col2, col3, col4 = st.columns(4)
-    col1.metric("Risk score", f"{result['risk_score']} / 1000")
+    col1.metric(
+        "Risk score",
+        f"{result['risk_score']} / 100",
+        help="Default probability rescaled to a 0–100 scale. Lower is better.",
+    )
     col2.metric(
         "Approval probability",
         f"{approval['approval_probability']:.0%}",
         delta=f"± {(approval['ci_upper'] - approval['ci_lower']) / 2:.1%}",
         delta_color="off",
-        help=f"Confidence band: {approval['confidence_band']}",
+        help=(
+            "1 − default probability. Strictly: the model's estimated "
+            f"chance you would repay. Confidence band: {approval['confidence_band']}."
+        ),
     )
-    col3.metric("Default probability", f"{result['risk_probability']:.1%}")
+    col3.metric(
+        "Default probability",
+        f"{result['risk_probability']:.1%}",
+        help="The LightGBM model's raw output: P(default within 12 months).",
+    )
     col4.metric(
         "Decision time",
         process["expected_time"],
-        help="Indicative — varies by lender policy.",
+        help=(
+            "Tier-based service-level expectation. Low → instant auto-decision; "
+            "Medium → 1–2 days for a quick human review; "
+            "High → 5+ days for full manual underwriting."
+        ),
     )
+
+    _render_metric_explanations(result, approval, process, gate)
 
     st.markdown(
         f'<div class="callout">Model: <strong>{result["model_name"]}</strong> '
@@ -335,6 +400,103 @@ def _render_assessment_result(form_data: dict[str, Any]) -> None:
         for k in list(st.session_state.keys()):
             del st.session_state[k]
         st.rerun()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Metric explanations
+# ─────────────────────────────────────────────────────────────────────────────
+def _render_metric_explanations(
+    result: dict,
+    approval: dict,
+    process: dict,
+    gate: dict,
+) -> None:
+    """Explain why each headline number reads the way it does for this applicant."""
+    pd_pct = result["risk_probability"] * 100
+    score = result["risk_score"]
+    approval_pct = approval["approval_probability"] * 100
+    tier = result["risk_category"]
+    decision = process["expected_time"]
+
+    tier_thresholds = "PD < 6% → Low · 6–15% → Medium · ≥ 15% → High"
+
+    decision_reason = {
+        "Low": (
+            "**Low risk → instant auto-decision.** The model's confidence is "
+            "high enough that no human review is needed for the standard "
+            "questionnaire fields."
+        ),
+        "Medium": (
+            "**Medium risk → 1–2 business days.** A loan officer briefly "
+            "reviews the application: usually a quick income / employment "
+            "verification, then either approves on standard terms or escalates."
+        ),
+        "High": (
+            "**High risk → 5+ business days (manual review).** Full manual "
+            "underwriting is required: documentation checks, possibly a credit "
+            "bureau pull, and a final committee decision."
+        ),
+    }.get(tier, "")
+
+    if gate.get("triggered"):
+        if gate.get("overrode_model"):
+            decision_reason += (
+                "  \nThe affordability gate triggered and **overrode** the model — "
+                f"it alone would have rated this {gate.get('model_tier', '?')} — "
+                "forcing manual review on affordability grounds."
+            )
+        else:
+            decision_reason += (
+                "  \nThe affordability gate also triggered, **independently agreeing** "
+                "with the model's High verdict — manual review on affordability grounds."
+            )
+
+    with st.expander("📖 What do these numbers mean?"):
+        st.markdown(
+            f"""
+**Risk score — {score} / 100**
+
+Your default probability rescaled into a 0–100 scale ({pd_pct:.1f}% × 100 = {score}).
+Lower is better. The model's predictions for real applicants almost never go
+above ~50 because true default risk caps out around there in the training data.
+
+**Default probability — {pd_pct:.1f}%**
+
+The estimated chance this application would result in a default within
+roughly the first 12 months of repayment. This is the single number every
+other metric is derived from. In normal cases this is the LightGBM model's
+raw output; when the affordability gate fires, the model's PD is replaced
+by a deterministic severity-based floor so the number reflects how badly
+the loan exceeds affordability ceilings (not just whether it does).
+
+**Approval probability — {approval_pct:.0f}%**
+
+The complement of default probability: `100% − {pd_pct:.1f}% = {approval_pct:.0f}%`.
+It is **not** an independent estimate of approval — it's the model's estimated
+chance you'd repay, framed positively. The ± band comes from a quick
+sensitivity check: we re-score the application with small random perturbations
+of the numeric inputs and report the 5th–95th percentile of the resulting
+probabilities.
+
+**Decision time — {decision}**
+
+{decision_reason}
+
+Tier thresholds were anchored to the 50th and 90th percentiles of the model's
+distribution on the 307k-row training set ({tier_thresholds}).
+
+---
+
+ℹ️ **The three top numbers are three views of one underlying probability.**
+They will always satisfy:
+
+- `risk_score = round(default_probability × 100)`
+- `approval_probability = 1 − default_probability`
+
+So a change in one is automatically reflected in the other two; the bootstrap
+band on approval probability is the only piece of new information.
+            """
+        )
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -419,26 +581,57 @@ def _render_loan_sandbox(
 
 
 def _render_risk_breakdown(decomposition: dict) -> None:
-    groups = decomposition.get("groups", {})
-    if not groups:
+    """SHAP per-applicant attribution: top features that pushed the prediction.
+
+    Positive SHAP (red) pushes the log-odds toward default; negative (green)
+    pulls them toward repaid. Bars are sorted by magnitude.
+    """
+    features = decomposition.get("features", [])
+    if not features:
         st.info(decomposition.get("note", "Risk decomposition unavailable."))
         return
-    fig = px.pie(
-        names=list(groups.keys()),
-        values=list(groups.values()),
-        hole=0.45,
-        color_discrete_sequence=px.colors.qualitative.Set2,
+
+    top_n = 12
+    rows = features[:top_n]
+    rows = list(reversed(rows))  # plotly horizontal bar reads bottom-up
+    labels = [f"{r['feature']} = {_pretty_value(r['value'])}" for r in rows]
+    values = [r["shap"] for r in rows]
+    colors = ["#d6586e" if v > 0 else "#3aa17e" for v in values]
+
+    fig = px.bar(
+        x=values,
+        y=labels,
+        orientation="h",
+        color=colors,
+        color_discrete_map="identity",
     )
     fig.update_layout(
-        height=420,
+        height=460,
         margin=dict(t=10, b=10, l=10, r=10),
-        showlegend=True,
+        showlegend=False,
+        xaxis_title="SHAP contribution (log-odds; → default, ← repaid)",
+        yaxis_title="",
     )
+    fig.add_vline(x=0, line_width=1, line_color="#999")
     st.plotly_chart(fig, use_container_width=True)
+
+    base = decomposition.get("base_value")
+    base_txt = f" Base log-odds: **{base:+.3f}**." if isinstance(base, (int, float)) else ""
     st.caption(
-        f"{decomposition.get('method', '')} — percentages are the model's risk "
-        "drivers, aggregated by feature group."
+        f"{decomposition.get('method', '')} — each bar is this applicant's "
+        f"SHAP value for that feature, in log-odds units. Red increases default "
+        f"risk; green decreases it.{base_txt}"
     )
+
+
+def _pretty_value(v: Any) -> str:
+    if isinstance(v, bool):
+        return "Yes" if v else "No"
+    if isinstance(v, float):
+        if abs(v) >= 1_000:
+            return f"{v:,.0f}"
+        return f"{v:.3g}"
+    return str(v)
 
 
 def _render_cohort_and_benchmark(cohort: dict, bench: dict) -> None:
