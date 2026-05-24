@@ -1,0 +1,216 @@
+{
+  "candidate_count": 38,
+  "selected_count": 25,
+  "full_candidate_auc": 0.6902,
+  "top25_auc": 0.6854,
+  "selected_features": [
+    "amt_annuity",
+    "days_id_publish",
+    "days_birth",
+    "days_registration",
+    "days_employed",
+    "organization_type",
+    "amt_credit",
+    "region_population_relative",
+    "amt_income_total",
+    "amt_goods_price",
+    "hour_appr_process_start",
+    "own_car_age",
+    "occupation_type",
+    "cnt_fam_members",
+    "weekday_appr_process_start",
+    "code_gender",
+    "flag_own_car",
+    "cnt_children",
+    "region_rating_client_w_city",
+    "flag_own_realty",
+    "flag_work_phone",
+    "flag_phone",
+    "reg_city_not_work_city",
+    "name_contract_type",
+    "name_family_status"
+  ],
+  "selected_numeric": [
+    "amt_annuity",
+    "days_id_publish",
+    "days_birth",
+    "days_registration",
+    "days_employed",
+    "amt_credit",
+    "region_population_relative",
+    "amt_income_total",
+    "amt_goods_price",
+    "hour_appr_process_start",
+    "own_car_age",
+    "cnt_fam_members",
+    "cnt_children",
+    "region_rating_client_w_city",
+    "flag_work_phone",
+    "flag_phone",
+    "reg_city_not_work_city"
+  ],
+  "selected_categorical": [
+    "organization_type",
+    "occupation_type",
+    "weekday_appr_process_start",
+    "code_gender",
+    "flag_own_car",
+    "flag_own_realty",
+    "name_contract_type",
+    "name_family_status"
+  ],
+  "full_ranking": [
+    {
+      "feature": "amt_annuity",
+      "gain_importance": 2858
+    },
+    {
+      "feature": "days_id_publish",
+      "gain_importance": 2848
+    },
+    {
+      "feature": "days_birth",
+      "gain_importance": 2662
+    },
+    {
+      "feature": "days_registration",
+      "gain_importance": 2620
+    },
+    {
+      "feature": "days_employed",
+      "gain_importance": 2517
+    },
+    {
+      "feature": "organization_type",
+      "gain_importance": 2334
+    },
+    {
+      "feature": "amt_credit",
+      "gain_importance": 2307
+    },
+    {
+      "feature": "region_population_relative",
+      "gain_importance": 2013
+    },
+    {
+      "feature": "amt_income_total",
+      "gain_importance": 1961
+    },
+    {
+      "feature": "amt_goods_price",
+      "gain_importance": 1804
+    },
+    {
+      "feature": "hour_appr_process_start",
+      "gain_importance": 1279
+    },
+    {
+      "feature": "own_car_age",
+      "gain_importance": 980
+    },
+    {
+      "feature": "occupation_type",
+      "gain_importance": 893
+    },
+    {
+      "feature": "cnt_fam_members",
+      "gain_importance": 408
+    },
+    {
+      "feature": "weekday_appr_process_start",
+      "gain_importance": 351
+    },
+    {
+      "feature": "code_gender",
+      "gain_importance": 324
+    },
+    {
+      "feature": "flag_own_car",
+      "gain_importance": 243
+    },
+    {
+      "feature": "cnt_children",
+      "gain_importance": 238
+    },
+    {
+      "feature": "region_rating_client_w_city",
+      "gain_importance": 228
+    },
+    {
+      "feature": "flag_own_realty",
+      "gain_importance": 225
+    },
+    {
+      "feature": "flag_work_phone",
+      "gain_importance": 220
+    },
+    {
+      "feature": "flag_phone",
+      "gain_importance": 217
+    },
+    {
+      "feature": "reg_city_not_work_city",
+      "gain_importance": 184
+    },
+    {
+      "feature": "name_contract_type",
+      "gain_importance": 180
+    },
+    {
+      "feature": "name_family_status",
+      "gain_importance": 171
+    },
+    {
+      "feature": "region_rating_client",
+      "gain_importance": 153
+    },
+    {
+      "feature": "live_city_not_work_city",
+      "gain_importance": 135
+    },
+    {
+      "feature": "reg_city_not_live_city",
+      "gain_importance": 129
+    },
+    {
+      "feature": "name_education_type",
+      "gain_importance": 107
+    },
+    {
+      "feature": "name_housing_type",
+      "gain_importance": 98
+    },
+    {
+      "feature": "flag_email",
+      "gain_importance": 90
+    },
+    {
+      "feature": "name_income_type",
+      "gain_importance": 54
+    },
+    {
+      "feature": "live_region_not_work_region",
+      "gain_importance": 51
+    },
+    {
+      "feature": "reg_region_not_work_region",
+      "gain_importance": 41
+    },
+    {
+      "feature": "reg_region_not_live_region",
+      "gain_importance": 33
+    },
+    {
+      "feature": "flag_emp_phone",
+      "gain_importance": 23
+    },
+    {
+      "feature": "flag_cont_mobile",
+      "gain_importance": 21
+    },
+    {
+      "feature": "flag_mobil",
+      "gain_importance": 0
+    }
+  ]
+}

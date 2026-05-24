@@ -1,0 +1,10 @@
+{
+  "experiment": "E4 CTGAN-balanced LightGBM (fast config)",
+  "config": "CTGAN(epochs=20) on 2000 minority samples; 30K synthetic; LightGBM defaults",
+  "features": 12,
+  "ctgan_train_time_s": 7.3,
+  "sample_time_s": 0.2,
+  "lgbm_train_time_s": 0.9,
+  "synthetic_minority_added": 30000,
+  "roc_auc": 0.6882
+}

@@ -17,5 +17,12 @@ streamlit>=1.50.0,<2.0.0
 plotly>=6.3.1,<7.0.0
 watchdog>=6.0.0,<7.0.0
 
+# Practical 3 — model expansion (Kaggle top-solution recipe)
+xgboost>=3.0.0,<4.0.0
+ctgan>=0.10.0,<1.0.0          # Tabular GAN for minority-class balancing (Xu et al. NeurIPS 2019)
+
+# Reactive notebooks (Epic 9 — LZ-10 Sprint 4)
+marimo>=0.20.0
+
 # Development and notebook support
 black>=25.1.0

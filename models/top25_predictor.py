@@ -1,0 +1,272 @@
+"""Inference wrapper for the Stage-2 squeeze model (top-25 self-reportable features).
+
+Loads a pickle bundle produced by ``scripts/squeeze_top25_accuracy.py``:
+
+    {
+      "model": sklearn estimator (LightGBM / Stacking / Calibrated),
+      "best_name": str,
+      "best_auc": float,
+      "ordinal_encoder": OrdinalEncoder,
+      "feature_set": list[str],      # full feature order (25 + ratios)
+      "selected_numeric": list[str],
+      "selected_categorical": list[str],
+      "derived_ratios": list[str],
+    }
+
+The form-side keys are friendlier than the model's column names (which
+match Kaggle's schema). The mapping is encapsulated here so the Streamlit
+component only needs to deal with form keys.
+"""
+from __future__ import annotations
+
+import math
+import pickle
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+
+import numpy as np
+import pandas as pd
+
+EPS = 1e-9
+
+# Mapping from form key → Kaggle column name + conversion fn.
+# Form values come in as plain Python types (str / int / float / bool);
+# the conversion fn produces the value the model expects.
+_FORM_TO_KAGGLE: dict[str, tuple[str, Any]] = {
+    # Personal
+    "gender": ("code_gender", lambda v: "F" if str(v).lower().startswith("f") else "M"),
+    "age_years": ("days_birth", lambda v: -float(v) * 365),
+    "num_children": ("cnt_children", lambda v: int(v)),
+    "num_family_members": ("cnt_fam_members", lambda v: float(v)),
+    "family_status": ("name_family_status", str),
+    # Employment
+    "years_employed": ("days_employed", lambda v: -float(v) * 365 if v else 0),
+    "organization_type": ("organization_type", str),
+    "occupation_type": ("occupation_type", str),
+    "has_work_phone": ("flag_work_phone", lambda v: int(bool(v))),
+    # Loan
+    "contract_type": ("name_contract_type", str),
+    "credit_amount": ("amt_credit", float),
+    "loan_annuity": ("amt_annuity", float),
+    "goods_price": ("amt_goods_price", float),
+    # Financial
+    "total_income": ("amt_income_total", float),
+    # Assets
+    "owns_car": ("flag_own_car", lambda v: "Y" if v else "N"),
+    "car_age_years": ("own_car_age", lambda v: float(v) if v else np.nan),
+    "owns_housing": ("flag_own_realty", lambda v: "Y" if v else "N"),
+    # Residence
+    "years_since_id_change": ("days_id_publish", lambda v: -float(v) * 365),
+    "years_at_address": ("days_registration", lambda v: -float(v) * 365),
+    "region_population_relative": ("region_population_relative", float),
+    "city_rating": ("region_rating_client_w_city", int),
+    "works_in_different_city": ("reg_city_not_work_city", lambda v: int(bool(v))),
+    # Other
+    "has_landline": ("flag_phone", lambda v: int(bool(v))),
+}
+
+
+def form_to_model_row(form: dict[str, Any]) -> dict[str, Any]:
+    """Translate the friendly form dict to a Kaggle-schema row dict."""
+    row: dict[str, Any] = {}
+    for form_key, (kaggle_col, conv) in _FORM_TO_KAGGLE.items():
+        if form_key in form and form[form_key] is not None and form[form_key] != "":
+            try:
+                row[kaggle_col] = conv(form[form_key])
+            except (TypeError, ValueError):
+                row[kaggle_col] = np.nan
+
+    # Auto-fill timestamp-derived fields (not asked of the user)
+    now = datetime.now()
+    row["hour_appr_process_start"] = now.hour
+    row["weekday_appr_process_start"] = now.strftime("%A").upper()
+    return row
+
+
+def _add_derived_ratios(df: pd.DataFrame) -> pd.DataFrame:
+    """Compute the 6 derived ratios used by the squeeze model."""
+    df = df.copy()
+    df["dti"] = df["amt_annuity"] / (df["amt_income_total"] + EPS)
+    df["credit_to_income"] = df["amt_credit"] / (df["amt_income_total"] + EPS)
+    df["annuity_to_credit"] = df["amt_annuity"] / (df["amt_credit"] + EPS)
+    df["credit_to_goods"] = df["amt_credit"] / (
+        df["amt_goods_price"].fillna(df["amt_credit"]) + EPS
+    )
+    df["years_employed_ratio"] = (-df["days_employed"]) / ((-df["days_birth"]) + EPS)
+    df["income_per_family_member"] = df["amt_income_total"] / (
+        df["cnt_fam_members"] + EPS
+    )
+    return df
+
+
+class Top25Predictor:
+    """Lightweight predictor for the Stage-2 squeeze model bundle."""
+
+    def __init__(self, bundle_path: str | Path):
+        bundle_path = Path(bundle_path)
+        if not bundle_path.exists():
+            raise FileNotFoundError(
+                f"Top-25 model bundle not found at {bundle_path}. "
+                "Run scripts/squeeze_top25_accuracy.py to produce it."
+            )
+        with open(bundle_path, "rb") as f:
+            bundle = pickle.load(f)
+
+        self.model = bundle["model"]
+        self.best_name = bundle["best_name"]
+        self.best_auc = bundle["best_auc"]
+        self.ordinal_encoder = bundle["ordinal_encoder"]
+        self.feature_set: list[str] = bundle["feature_set"]
+        self.selected_numeric: list[str] = bundle["selected_numeric"]
+        self.selected_categorical: list[str] = bundle["selected_categorical"]
+        self.derived_ratios: list[str] = bundle["derived_ratios"]
+
+        # Tier thresholds — percentile-anchored to the squeeze model's actual
+        # prediction distribution on the 307K-row training set. The original
+        # 0.30 / 0.60 thresholds (copied from the legacy 15-field GBM) placed
+        # 99.36% of applicants in Low and 0% in High because this model's
+        # predictions saturate around 0.58 (max ever observed). New anchors:
+        #   p50 = 0.0615 → Low cutoff 0.06   (~50% population)
+        #   p90 = 0.1465 → High cutoff 0.15  (~10% population, default rate ~21–27%)
+        self.low_threshold = 0.06
+        self.high_threshold = 0.15
+
+    def _prepare_input(self, form: dict[str, Any]) -> pd.DataFrame:
+        row = form_to_model_row(form)
+        df = pd.DataFrame([row])
+
+        for col in self.selected_numeric:
+            if col not in df.columns:
+                df[col] = np.nan
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+        for col in self.selected_categorical:
+            if col not in df.columns:
+                df[col] = np.nan
+            df[col] = df[col].astype(str)
+
+        df = _add_derived_ratios(df)
+
+        # Order columns and encode categoricals using the saved encoder
+        df = df[self.feature_set]
+        df[self.selected_categorical] = self.ordinal_encoder.transform(
+            df[self.selected_categorical]
+        )
+
+        # Final NaN guard (LightGBM handles NaN; sklearn estimators may not)
+        for col in self.selected_numeric + self.derived_ratios:
+            if df[col].isnull().any():
+                df[col] = df[col].fillna(0)
+        return df
+
+    def predict(self, form: dict[str, Any]) -> dict[str, Any]:
+        X = self._prepare_input(form)
+        model_proba = float(self.model.predict_proba(X)[0, 1])
+
+        if model_proba < self.low_threshold:
+            model_tier = "Low"
+        elif model_proba < self.high_threshold:
+            model_tier = "Medium"
+        else:
+            model_tier = "High"
+
+        # LightGBM extrapolates poorly: 1k-income / 100k-loan and
+        # 5k-income / 100k-loan score identical PD because both rows land in
+        # the same out-of-distribution leaf. Outside the in-sample region we
+        # replace the model's PD with a deterministic affordability-driven
+        # floor so PD / score / approval move monotonically with severity —
+        # the actuarial DSTI/LTV approach EU consumer-credit rules expect.
+        gate_reason = _affordability_gate(X.iloc[0])
+        gate_triggered = gate_reason is not None
+        if gate_triggered:
+            floor = _affordability_pd_floor(X.iloc[0])
+            final_proba = max(model_proba, floor)
+        else:
+            floor = None
+            final_proba = model_proba
+
+        tier = "High" if gate_triggered else model_tier
+        overrode_model = gate_triggered and model_tier != "High"
+
+        return {
+            "risk_probability": final_proba,
+            "risk_score": int(round(final_proba * 100)),
+            "risk_category": tier,
+            "model_name": self.best_name,
+            "model_auc": self.best_auc,
+            "affordability_gate": {
+                "triggered": gate_triggered,
+                "overrode_model": overrode_model,
+                "model_tier": model_tier,
+                "model_probability": model_proba,
+                "affordability_pd_floor": floor,
+                "reason": gate_reason,
+            },
+        }
+
+
+# Tunable; thresholds chosen against the EU regulatory DTI ceiling (~0.40
+# for mortgages) plus a safety margin, and against realistic consumer-loan
+# credit-to-income ratios (mortgages ~3-5x, consumer loans <2x).
+_GATE_DTI_MAX = 0.80
+_GATE_CREDIT_TO_INCOME_MAX = 10.0
+_GATE_ANNUITY_TO_INCOME_MAX = 0.80
+
+
+def _affordability_pd_floor(row: pd.Series) -> float:
+    """Deterministic PD floor when the affordability gate is triggered.
+
+    Inside the model's in-sample region the LightGBM PD is trustworthy.
+    Outside it (DTI > 0.80 or CTI > 10×) the model's PD saturates and
+    two clearly different profiles can score the same number. The floor
+    here is a monotonic function of how badly the affordability ceilings
+    are exceeded, so PD / score / approval always move with severity:
+
+      - at the gate boundary    →  floor ≈ 0.50  (clearly bad, not certain)
+      - 1 "unit" past ceiling   →  floor ≈ 0.81  (matches worst in-sample)
+      - far past the ceiling    →  floor →  0.99
+
+    One unit of overshoot is calibrated as DTI 0.80 → 2.0 (annuity > 2×
+    income) or CTI 10× → 30× (principal > 30× income); the worst dimension
+    drives the floor.
+    """
+    annuity = float(row.get("amt_annuity", 0) or 0)
+    credit = float(row.get("amt_credit", 0) or 0)
+    income = float(row.get("amt_income_total", 0) or 0)
+    if income <= 0:
+        return 0.99  # no income → effectively certain default
+
+    dti = annuity / income
+    cti = credit / income
+    dti_severity = max(0.0, (dti - _GATE_DTI_MAX) / 1.20)
+    cti_severity = max(0.0, (cti - _GATE_CREDIT_TO_INCOME_MAX) / 20.0)
+    severity = max(dti_severity, cti_severity)
+    return 0.50 + 0.49 * (1.0 - math.exp(-severity))
+
+
+def _affordability_gate(row: pd.Series) -> str | None:
+    """Return a human-readable reason if the row is unaffordable, else None."""
+    dti = float(row.get("dti", 0) or 0)
+    cti = float(row.get("credit_to_income", 0) or 0)
+    annuity = float(row.get("amt_annuity", 0) or 0)
+    income = float(row.get("amt_income_total", 0) or 0)
+    annuity_to_income = annuity / (income + EPS) if income > 0 else float("inf")
+
+    if dti > _GATE_DTI_MAX:
+        return (
+            f"Debt-to-income ratio {dti:.2f} exceeds the {_GATE_DTI_MAX:.2f} "
+            "affordability ceiling — the requested annuity is larger than the "
+            "applicant could plausibly service from declared income."
+        )
+    if cti > _GATE_CREDIT_TO_INCOME_MAX:
+        return (
+            f"Loan principal is {cti:.1f}× the applicant's annual income "
+            f"(ceiling {_GATE_CREDIT_TO_INCOME_MAX:.0f}×). Unaffordable on the "
+            "stated income."
+        )
+    if annuity_to_income > _GATE_ANNUITY_TO_INCOME_MAX:
+        return (
+            f"Annual annuity is {annuity_to_income:.2f}× declared income — the "
+            "applicant cannot service the monthly payment."
+        )
+    return None
