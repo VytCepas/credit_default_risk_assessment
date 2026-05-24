@@ -1,0 +1,224 @@
+{
+  "version": "1",
+  "metadata": {
+    "marimo_version": "0.23.8",
+    "script_metadata_hash": null
+  },
+  "cells": [
+    {
+      "id": "Hbol",
+      "code_hash": "1d0db38904205bec4d6f6f6a1f6cec3e",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "MJUe",
+      "code_hash": "5fffd5f3f7c91542b65b9f4348ba06b7",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "# Home Credit Default Risk \u2014 Marimo Edition\n\nReactive port of `notebooks/risk_default_analysis.ipynb`.\n\n**Kaggle leaderboard reference** (Home Credit Default Risk, 7,198 teams, 2018):\n\n| Tier | ROC-AUC |\n| --- | --- |\n| 1st place (\"Home Aloan\") | ~0.806 |\n| Top 1 % | ~0.801 |\n| Bronze / top 10 % | ~0.794 |\n| Aguiar public kernel | ~0.791 |\n| Median submission | ~0.75 |\n| Application-only LR baseline | ~0.70 |\n| **Our production Top-25 (Standard+)** | **0.7146** |\n| Production 15-field GBM (Practical 2) | 0.6272 |"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "vblA",
+      "code_hash": "1639f1a84be57784e3d1d54793eb69dd",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "bkHC",
+      "code_hash": "61eb832f962139534b45e862f842038a",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "**Dataset loaded:** `application_train.parquet`\n\n- Rows: 307,511\n- Columns: 122\n- Default rate: 8.1%\n- EXT_SOURCE_1/2/3 present: `True`"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "lEQa",
+      "code_hash": "7e7e574597a082e841faaa19055a5189",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "PKri",
+      "code_hash": "47b7ea037ccb7fabdfe7b5853073065c",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "## E1 \u2014 Unconstrained baseline (LightGBM on all numeric features)\n\nReveals the AUC ceiling reachable with `application_train` alone. The\nquestionnaire constraint excludes `EXT_SOURCE_*`; here we **include**\nthem to quantify the cost of the constraint."
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "Xref",
+      "code_hash": "b904184280d166d313d0a151deec965d",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "application/json": "{\"experiment\": \"E1 \\u2014 unconstrained baseline\", \"features\": 111, \"train_time_s\": \"text/plain+float:2.8\", \"roc_auc\": \"text/plain+float:0.7658\"}"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "SFPL",
+      "code_hash": "82b1a0bcf1108274da6febadb1d3bc28",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "## E2a \u2014 Engineered ratios on the questionnaire surface\n\nFive ratio features derived from columns the production app already\ncollects. Zero-data-cost feature engineering: the application form does\nnot need to change."
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "BYtC",
+      "code_hash": "bf0c0560afd90956817a1b6ad53e8a38",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "application/json": "{\"experiment\": \"E2a \\u2014 Questionnaire + 5 ratios\", \"features\": 12, \"train_time_s\": \"text/plain+float:0.8\", \"roc_auc\": \"text/plain+float:0.6846\"}"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "RGSE",
+      "code_hash": "4519719621ad0f0375adc781389ee1fb",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "## E4 \u2014 CTGAN minority-class synthetic balancing\n\nReplaces `SMOTETomek` (linear interpolation + Tomek cleaning) with\n**CTGAN** (Conditional Tabular GAN; Xu et al. NeurIPS 2019). CTGAN\nmodels the joint distribution of all columns, handling discrete\ncolumns natively via conditional generation.\n\nReference: <https://arxiv.org/abs/1907.00503>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "Kclp",
+      "code_hash": "de59e87dff98568aa296dd3bc1a0952c",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "application/json": "{\"experiment\": \"E4 \\u2014 CTGAN-balanced LightGBM\", \"ctgan_train_time_s\": \"text/plain+float:18.1\", \"synthetic_minority_added\": 206288, \"roc_auc\": \"text/plain+float:0.6858\"}"
+          }
+        }
+      ],
+      "console": [
+        {
+          "type": "stream",
+          "name": "stderr",
+          "text": "/home/vytcepas/projects/credit_default_risk_assessment/.venv/lib/python3.12/site-packages/ctgan/synthesizers/_utils.py:16: FutureWarning: `cuda` parameter is deprecated and will be removed in a future release. Please use `enable_gpu` instead.\n  warnings.warn(\n",
+          "mimetype": "text/plain"
+        }
+      ]
+    },
+    {
+      "id": "emfo",
+      "code_hash": "4873c71d5b36e031dc519c05e2546b4c",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "## E5 \u2014 Stacking ensemble + probability calibration\n\nStack LightGBM + GBM (+ optional XGBoost) with a Logistic Regression\nmeta-learner, then calibrate the meta-learner's probabilities with\n`CalibratedClassifierCV`. Calibration does not improve ROC-AUC (it is\na monotone transform) but lowers Brier score \u2014 critical when the\nscore is shown to loan officers as a percentage."
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "Hstk",
+      "code_hash": "9c383b36390547eb4eff9a89665a850e",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "application/json": "{\"experiment\": \"E5 \\u2014 Stacking + calibration\", \"stack_roc_auc\": \"text/plain+float:0.6867\", \"brier_uncalibrated\": \"text/plain+float:0.0717\", \"brier_calibrated\": \"text/plain+float:0.0724\", \"base_models\": [\"gbm\", \"lgbm\", \"xgb\"]}"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "nWHF",
+      "code_hash": "bfbb653801e7dcecbed370023fc9c1f3",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "## Top-25 squeeze pipeline \u2014 summary\n\nLoaded from `scripts/results/squeeze_summary.json`. The squeeze\npipeline lives in `scripts/squeeze_top25_accuracy.py` and produces\nthe production Standard+ model at `src/assets/top25_risk_model.pkl`."
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "iLit",
+      "code_hash": "fe141582d7623662a1e0ffa588233e61",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/html": "<div>\n<style scoped>\n    .dataframe tbody tr th:only-of-type {\n        vertical-align: middle;\n    }\n\n    .dataframe tbody tr th {\n        vertical-align: top;\n    }\n\n    .dataframe thead th {\n        text-align: right;\n    }\n</style>\n<table border=\"1\" class=\"dataframe\">\n  <thead>\n    <tr style=\"text-align: right;\">\n      <th></th>\n      <th>_marimo_row_id</th>\n      <th>Stage</th>\n      <th>ROC-AUC</th>\n      <th>\u0394 vs production</th>\n    </tr>\n  </thead>\n  <tbody>\n    <tr>\n      <th>0</th>\n      <td>0</td>\n      <td>Production GBM (15 fields)</td>\n      <td>0.6272</td>\n      <td>0.0000</td>\n    </tr>\n    <tr>\n      <th>1</th>\n      <td>1</td>\n      <td>S1 \u2014 Top-25 only</td>\n      <td>0.6854</td>\n      <td>0.0582</td>\n    </tr>\n    <tr>\n      <th>2</th>\n      <td>2</td>\n      <td>S1+ratios \u2014 Top-25 + 6 ratios</td>\n      <td>0.7093</td>\n      <td>0.0821</td>\n    </tr>\n    <tr>\n      <th>3</th>\n      <td>3</td>\n      <td>S2 \u2014 RandomizedSearchCV</td>\n      <td>0.7146</td>\n      <td>0.0874</td>\n    </tr>\n    <tr>\n      <th>4</th>\n      <td>4</td>\n      <td>S3 \u2014 CTGAN-balanced</td>\n      <td>0.7119</td>\n      <td>0.0847</td>\n    </tr>\n    <tr>\n      <th>5</th>\n      <td>5</td>\n      <td>S4 \u2014 Stacking + calibration</td>\n      <td>0.7142</td>\n      <td>0.0870</td>\n    </tr>\n  </tbody>\n</table>\n</div>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "ZHCJ",
+      "code_hash": "bd0724db2745cda5c22e47bef53a574c",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/html": "<div>\n<style scoped>\n    .dataframe tbody tr th:only-of-type {\n        vertical-align: middle;\n    }\n\n    .dataframe tbody tr th {\n        vertical-align: top;\n    }\n\n    .dataframe thead th {\n        text-align: right;\n    }\n</style>\n<table border=\"1\" class=\"dataframe\">\n  <thead>\n    <tr style=\"text-align: right;\">\n      <th></th>\n      <th>_marimo_row_id</th>\n      <th>Experiment</th>\n      <th>ROC-AUC</th>\n      <th>Notes</th>\n    </tr>\n  </thead>\n  <tbody>\n    <tr>\n      <th>0</th>\n      <td>0</td>\n      <td>E1 \u2014 unconstrained baseline</td>\n      <td>0.7658</td>\n      <td>features=111, time=2.8s</td>\n    </tr>\n    <tr>\n      <th>1</th>\n      <td>1</td>\n      <td>E2a \u2014 Questionnaire + 5 ratios</td>\n      <td>0.6846</td>\n      <td>features=12, time=0.8s</td>\n    </tr>\n    <tr>\n      <th>2</th>\n      <td>2</td>\n      <td>E4 \u2014 CTGAN-balanced LightGBM</td>\n      <td>0.6858</td>\n      <td>features=?, time=?s</td>\n    </tr>\n    <tr>\n      <th>3</th>\n      <td>3</td>\n      <td>E5 \u2014 Stacking + calibration</td>\n      <td>0.6867</td>\n      <td>features=?, time=?s</td>\n    </tr>\n  </tbody>\n</table>\n</div>"
+          }
+        }
+      ],
+      "console": []
+    }
+  ]
+}
