@@ -19,6 +19,7 @@ component only needs to deal with form keys.
 """
 from __future__ import annotations
 
+import math
 import pickle
 from datetime import datetime
 from pathlib import Path
@@ -121,10 +122,15 @@ class Top25Predictor:
         self.selected_categorical: list[str] = bundle["selected_categorical"]
         self.derived_ratios: list[str] = bundle["derived_ratios"]
 
-        # Tier thresholds — copied from the production RiskPredictor for
-        # consistency with the current Streamlit UI.
-        self.low_threshold = 0.30
-        self.high_threshold = 0.60
+        # Tier thresholds — percentile-anchored to the squeeze model's actual
+        # prediction distribution on the 307K-row training set. The original
+        # 0.30 / 0.60 thresholds (copied from the legacy 15-field GBM) placed
+        # 99.36% of applicants in Low and 0% in High because this model's
+        # predictions saturate around 0.58 (max ever observed). New anchors:
+        #   p50 = 0.0615 → Low cutoff 0.06   (~50% population)
+        #   p90 = 0.1465 → High cutoff 0.15  (~10% population, default rate ~21–27%)
+        self.low_threshold = 0.06
+        self.high_threshold = 0.15
 
     def _prepare_input(self, form: dict[str, Any]) -> pd.DataFrame:
         row = form_to_model_row(form)
@@ -155,19 +161,112 @@ class Top25Predictor:
 
     def predict(self, form: dict[str, Any]) -> dict[str, Any]:
         X = self._prepare_input(form)
-        proba = float(self.model.predict_proba(X)[0, 1])
+        model_proba = float(self.model.predict_proba(X)[0, 1])
 
-        if proba < self.low_threshold:
-            tier = "Low"
-        elif proba < self.high_threshold:
-            tier = "Medium"
+        if model_proba < self.low_threshold:
+            model_tier = "Low"
+        elif model_proba < self.high_threshold:
+            model_tier = "Medium"
         else:
-            tier = "High"
+            model_tier = "High"
+
+        # LightGBM extrapolates poorly: 1k-income / 100k-loan and
+        # 5k-income / 100k-loan score identical PD because both rows land in
+        # the same out-of-distribution leaf. Outside the in-sample region we
+        # replace the model's PD with a deterministic affordability-driven
+        # floor so PD / score / approval move monotonically with severity —
+        # the actuarial DSTI/LTV approach EU consumer-credit rules expect.
+        gate_reason = _affordability_gate(X.iloc[0])
+        gate_triggered = gate_reason is not None
+        if gate_triggered:
+            floor = _affordability_pd_floor(X.iloc[0])
+            final_proba = max(model_proba, floor)
+        else:
+            floor = None
+            final_proba = model_proba
+
+        tier = "High" if gate_triggered else model_tier
+        overrode_model = gate_triggered and model_tier != "High"
 
         return {
-            "risk_probability": proba,
-            "risk_score": int(round(proba * 1000)),
+            "risk_probability": final_proba,
+            "risk_score": int(round(final_proba * 100)),
             "risk_category": tier,
             "model_name": self.best_name,
             "model_auc": self.best_auc,
+            "affordability_gate": {
+                "triggered": gate_triggered,
+                "overrode_model": overrode_model,
+                "model_tier": model_tier,
+                "model_probability": model_proba,
+                "affordability_pd_floor": floor,
+                "reason": gate_reason,
+            },
         }
+
+
+# Tunable; thresholds chosen against the EU regulatory DTI ceiling (~0.40
+# for mortgages) plus a safety margin, and against realistic consumer-loan
+# credit-to-income ratios (mortgages ~3-5x, consumer loans <2x).
+_GATE_DTI_MAX = 0.80
+_GATE_CREDIT_TO_INCOME_MAX = 10.0
+_GATE_ANNUITY_TO_INCOME_MAX = 0.80
+
+
+def _affordability_pd_floor(row: pd.Series) -> float:
+    """Deterministic PD floor when the affordability gate is triggered.
+
+    Inside the model's in-sample region the LightGBM PD is trustworthy.
+    Outside it (DTI > 0.80 or CTI > 10×) the model's PD saturates and
+    two clearly different profiles can score the same number. The floor
+    here is a monotonic function of how badly the affordability ceilings
+    are exceeded, so PD / score / approval always move with severity:
+
+      - at the gate boundary    →  floor ≈ 0.50  (clearly bad, not certain)
+      - 1 "unit" past ceiling   →  floor ≈ 0.81  (matches worst in-sample)
+      - far past the ceiling    →  floor →  0.99
+
+    One unit of overshoot is calibrated as DTI 0.80 → 2.0 (annuity > 2×
+    income) or CTI 10× → 30× (principal > 30× income); the worst dimension
+    drives the floor.
+    """
+    annuity = float(row.get("amt_annuity", 0) or 0)
+    credit = float(row.get("amt_credit", 0) or 0)
+    income = float(row.get("amt_income_total", 0) or 0)
+    if income <= 0:
+        return 0.99  # no income → effectively certain default
+
+    dti = annuity / income
+    cti = credit / income
+    dti_severity = max(0.0, (dti - _GATE_DTI_MAX) / 1.20)
+    cti_severity = max(0.0, (cti - _GATE_CREDIT_TO_INCOME_MAX) / 20.0)
+    severity = max(dti_severity, cti_severity)
+    return 0.50 + 0.49 * (1.0 - math.exp(-severity))
+
+
+def _affordability_gate(row: pd.Series) -> str | None:
+    """Return a human-readable reason if the row is unaffordable, else None."""
+    dti = float(row.get("dti", 0) or 0)
+    cti = float(row.get("credit_to_income", 0) or 0)
+    annuity = float(row.get("amt_annuity", 0) or 0)
+    income = float(row.get("amt_income_total", 0) or 0)
+    annuity_to_income = annuity / (income + EPS) if income > 0 else float("inf")
+
+    if dti > _GATE_DTI_MAX:
+        return (
+            f"Debt-to-income ratio {dti:.2f} exceeds the {_GATE_DTI_MAX:.2f} "
+            "affordability ceiling — the requested annuity is larger than the "
+            "applicant could plausibly service from declared income."
+        )
+    if cti > _GATE_CREDIT_TO_INCOME_MAX:
+        return (
+            f"Loan principal is {cti:.1f}× the applicant's annual income "
+            f"(ceiling {_GATE_CREDIT_TO_INCOME_MAX:.0f}×). Unaffordable on the "
+            "stated income."
+        )
+    if annuity_to_income > _GATE_ANNUITY_TO_INCOME_MAX:
+        return (
+            f"Annual annuity is {annuity_to_income:.2f}× declared income — the "
+            "applicant cannot service the monthly payment."
+        )
+    return None
