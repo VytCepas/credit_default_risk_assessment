@@ -248,7 +248,6 @@ def _render_assessment_result(form_data: dict[str, Any]) -> None:
         )
         bench = insights.industry_region_benchmark(form_data, _load_industry_benchmarks())
         process = insights.approval_process_time(result["risk_category"])
-        rec_max = insights.recommended_max_loan(predictor, form_data)
         counter_factuals = insights.counter_factual_recommendations(predictor, form_data)
         time_to_improve = (
             insights.time_to_improvement(predictor, form_data)
@@ -303,9 +302,8 @@ def _render_assessment_result(form_data: dict[str, Any]) -> None:
     )
 
     # Insights tabs
-    tab_wins, tab_loan, tab_break, tab_compare, tab_improve, tab_traits = st.tabs([
+    tab_wins, tab_break, tab_compare, tab_improve, tab_traits = st.tabs([
         "💡 Quick wins",
-        "💰 Loan amount?",
         "📊 Risk breakdown",
         "🏘️ How do I compare?",
         "⏱️ Time to improve",
@@ -314,9 +312,6 @@ def _render_assessment_result(form_data: dict[str, Any]) -> None:
 
     with tab_wins:
         _render_quick_wins(counter_factuals)
-
-    with tab_loan:
-        _render_loan_sandbox(predictor, form_data, result, rec_max)
 
     with tab_break:
         _render_risk_breakdown(decomposition)
@@ -366,56 +361,6 @@ def _render_quick_wins(counter_factuals: dict) -> None:
         "Counter-factual perturbations are limited to mutable features (no demographic "
         "or family-status changes are suggested)."
     )
-
-
-def _render_loan_sandbox(
-    predictor: Top25Predictor,
-    form_data: dict,
-    result: dict,
-    rec_max: dict,
-) -> None:
-    if rec_max.get("amount") is not None:
-        st.success(
-            f"💰 Recommended max for **{rec_max['projected_tier']}** tier: "
-            f"**€{int(rec_max['amount']):,}** "
-            f"(projected score {rec_max['projected_score']})"
-        )
-        st.caption(rec_max.get("note", ""))
-    else:
-        st.warning(rec_max.get("note", "No safe loan amount found."))
-
-    st.markdown("##### What if I borrowed differently?")
-    slider_default = int(form_data.get("credit_amount") or 500_000)
-    new_amount = st.slider(
-        "Loan amount (€)",
-        min_value=50_000,
-        max_value=max(2_000_000, slider_default * 2),
-        value=slider_default,
-        step=10_000,
-        key="loan_slider",
-    )
-    if new_amount != slider_default:
-        with st.spinner("Re-scoring…"):
-            scenario = dict(form_data)
-            scenario["credit_amount"] = float(new_amount)
-            scenario["loan_annuity"] = (
-                float(form_data.get("loan_annuity") or 25_000)
-                * float(new_amount)
-                / slider_default
-            )
-            new_result = predictor.predict(scenario)
-        col_a, col_b = st.columns(2)
-        col_a.metric(
-            f"At €{new_amount:,}",
-            f"{new_result['risk_score']} / 1000",
-            delta=new_result["risk_score"] - result["risk_score"],
-            delta_color="inverse",
-        )
-        col_b.metric(
-            "New tier",
-            new_result["risk_category"],
-            help=f"{new_result['risk_probability']:.1%} default probability",
-        )
 
 
 def _render_risk_breakdown(decomposition: dict) -> None:
