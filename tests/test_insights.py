@@ -128,14 +128,40 @@ def test_p07_low_risk_already_at_target(predictor, low_risk_form):
     assert r["already_at_target"] or r["months_to_target"] is not None
 
 
-# P-09 — risk decomposition
-def test_p09_decomposition_sums_to_100(predictor, low_risk_form):
-    from models.insights import risk_decomposition
+# P-09 — risk decomposition (SHAP log-odds, not percentages)
+def test_p09_decomposition_returns_signed_log_odds(predictor, low_risk_form):
+    from models.insights import risk_decomposition, FEATURE_GROUPS
+    import math
+
     r = risk_decomposition(predictor, low_risk_form)
+
+    # If SHAP wasn't computable, the function returns a stub — accept that.
+    if r.get("note") and not r.get("features"):
+        return
+
     groups = r.get("groups", {})
-    if groups:
-        total = sum(groups.values())
-        assert abs(total - 100.0) < 1.0, f"Group percentages should sum to ~100, got {total}"
+    features = r.get("features", [])
+    base = r.get("base_value")
+
+    assert features, "Expected per-feature SHAP rows"
+    assert groups, "Expected non-empty group totals"
+    assert all(isinstance(v, float) for v in groups.values())
+    assert all(math.isfinite(v) for v in groups.values())
+
+    # Every group key should be one of the declared FEATURE_GROUPS values (or "Other").
+    allowed = set(FEATURE_GROUPS.values()) | {"Other"}
+    assert set(groups.keys()).issubset(allowed)
+
+    # SHAP invariant: sum of per-feature contributions + base_value == prediction
+    # log-odds. We don't recompute the log-odds here, but we assert finiteness
+    # and that the per-feature sum matches the group totals (within float noise).
+    feat_sum = sum(row["shap"] for row in features)
+    group_sum = sum(groups.values())
+    assert math.isfinite(feat_sum)
+    assert math.isfinite(base)
+    assert abs(feat_sum - group_sum) < 1e-4, (
+        f"Per-feature SHAP sum ({feat_sum}) must equal group-total sum ({group_sum})"
+    )
 
 
 # P-03 — cohort percentile (skips if precompute hasn't run)

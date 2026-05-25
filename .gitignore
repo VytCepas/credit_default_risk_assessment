@@ -21,3 +21,8 @@ env/
 
 # Claude Code workspace (per-machine state, not for version control)
 .claude/
+
+# pytest-cov artifacts
+.coverage
+htmlcov/
+coverage.xml
