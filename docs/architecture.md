@@ -1,8 +1,8 @@
 # Project Architecture
 
-Updated: 2026-05-23
+Updated: 2026-05-25
 
-This document explains where each piece of code lives and why. If you're new to the repo, start here.
+This document explains where each piece of code lives and why. If you're new to the repo, start here. For a higher-level intro see [README.md](../README.md); for setup steps see [SETUP.md](../SETUP.md).
 
 ## Top-level layout
 
@@ -43,8 +43,9 @@ credit_default_risk_assessment/
 
 > **Note:** the legacy 15-field flow (`risk_model.py`, `questionnaire.py`,
 > `risk_predictor.py`, the legacy tests, and the `risk_model.pkl` artefact)
-> was removed in PR `feat/streamlit-ux-rework`. The Standard+ tier is now
-> the only flow the app exposes.
+> was removed during the Practical 3 UX rework. The Standard+ tier is now
+> the only flow the app exposes. See [CHANGELOG.md](../CHANGELOG.md) for the
+> per-milestone history.
 
 ## The `models/` vs `src/predictors/` split
 
@@ -87,9 +88,9 @@ to change.
 
 Architecture-shaping decisions go in `project_docs/adr/`:
 
-- **ADR 0001** — Tiered Questionnaire Strategy (Quick / Standard+ / Extended +
+- **[ADR 0001](../project_docs/adr/0001_tiered_questionnaire.md)** — Tiered Questionnaire Strategy (Quick / Standard+ / Extended +
   derived layer + bureau pull track).
-- **ADR 0002** — Additional Prediction Surfaces (P-01…P-10 user-facing insights).
+- **[ADR 0002](../project_docs/adr/0002_insights_surfaces.md)** — Additional Prediction Surfaces (P-01…P-10 user-facing insights).
 
 Future ADRs should follow the same numbered template.
 
